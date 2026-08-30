@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wsj27-cms
+spec:
+  selector:
+    app: wsj27-cms
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000

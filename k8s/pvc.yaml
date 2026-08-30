@@ -1,0 +1,15 @@
+# Media uploads (Payload's uploads directory). ReadWriteOnce is what pins the
+# Deployment to one replica and to strategy: Recreate — an Azure disk can only
+# attach to one node.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wsj27-cms-uploads
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Same class the wsj27-postgres-temp StatefulSet already uses on this cluster.
+  storageClassName: disk-standardssd
+  resources:
+    requests:
+      storage: 10Gi

@@ -1,0 +1,35 @@
+# Routes /_services/cms on the shared campfire host to the CMS.
+#
+# No strip-prefix middleware: the base path is baked into the image
+# (NEXT_BASE_PATH), so the app expects to receive the full path.
+#
+# No cert-manager annotations either, on purpose: the `testapp` Ingress owns
+# the certificate for campfire.wsj27.scouterna.net and cert-manager writes it
+# to `testapp-tls`; sibling ingresses on the host (wsj27-auth-api does the
+# same) only reference that secret. A second ingress-shim annotation for the
+# same host would have two owners fighting over one Certificate.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wsj27-cms
+  labels:
+    app: wsj27-cms
+spec:
+  # Required: traefik is not the default IngressClass on this cluster (Kong
+  # also runs here), so an omitted class silently lands on the wrong one.
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - campfire.wsj27.scouterna.net
+      secretName: testapp-tls
+  rules:
+    - host: campfire.wsj27.scouterna.net
+      http:
+        paths:
+          - path: /_services/cms
+            pathType: Prefix
+            backend:
+              service:
+                name: wsj27-cms
+                port:
+                  number: 80

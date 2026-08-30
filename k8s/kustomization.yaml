@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# WSJ27 CMS deployment manifests.
+# Applied by hand, never by CI: see README.md in this directory.
+namespace: wsj27
+
+resources:
+  - configmap.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+
+images:
+  - name: ghcr.io/scouterna/wsj27-cms
+    # Deliberate placeholder — deploy a git-SHA tag, never `latest`:
+    #   IMG=ghcr.io/scouterna/wsj27-cms
+    #   (cd k8s && kustomize edit set image "$IMG=$IMG:<sha>") && kubectl apply -k k8s
+    # then revert the edit — never commit a real tag.
+    newTag: set-me-to-a-git-sha

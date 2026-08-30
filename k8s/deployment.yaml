@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wsj27-cms
+spec:
+  # One replica, and Recreate rather than RollingUpdate, both forced by the
+  # uploads PVC: it is ReadWriteOnce, so a rolling replacement pod could only
+  # start if it happened to land on the same node. Recreate trades a few
+  # seconds of downtime per deploy for never deadlocking on the volume. It
+  # also means two pods never race the boot-time database migrations.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wsj27-cms
+  template:
+    metadata:
+      labels:
+        app: wsj27-cms
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # The image runs as uid 1001 (nextjs). fsGroup makes the uploads volume
+        # group-writable for the pod's processes.
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: wsj27-cms
+          image: ghcr.io/scouterna/wsj27-cms
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: wsj27-cms-config
+            # PAYLOAD_SECRET and DATABASE_URL. Created imperatively — see
+            # README.md in this directory.
+            - secretRef:
+                name: wsj27-cms-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            # readOnlyRootFilesystem is deliberately NOT set: Next.js
+            # standalone writes its render/image cache under /app/.next.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          # Readiness hits the app through its base path; the first request
+          # after boot also runs Payload's prodMigrations, so the thresholds
+          # allow it a couple of minutes before the pod is declared unready.
+          readinessProbe:
+            httpGet:
+              path: /_services/cms
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          # Liveness only checks that the process accepts connections —
+          # restarting the pod cannot fix a slow database or a failed
+          # migration, so it must not depend on them.
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/media
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: wsj27-cms-uploads
