@@ -1,0 +1,115 @@
+/* Scoped under .handbok — the template's global styles.css paints the whole
+ * frontend black-on-white-inverted, so this page brings its own ground. */
+
+.handbok {
+  min-height: 100vh;
+  background: #fff;
+  color: #1d1d1f;
+  font-family: system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.handbok-inner {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 6rem;
+}
+
+.handbok header .kicker {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6d28d9;
+}
+
+.handbok h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+.handbok .chapter > h1 {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 3px solid #6d28d9;
+}
+
+.handbok h2 {
+  font-size: 1.4rem;
+  margin: 2.5rem 0 0.5rem;
+}
+
+.handbok h3 {
+  font-size: 1.15rem;
+  margin: 1.75rem 0 0.25rem;
+}
+
+.handbok h4 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.25rem;
+}
+
+.handbok a {
+  color: #6d28d9;
+}
+
+.handbok .toc {
+  margin: 2rem 0 1rem;
+  padding: 1rem 1.25rem;
+  background: #f5f3ff;
+  border-radius: 8px;
+}
+
+.handbok .toc-chapter > a {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.handbok .toc ul {
+  margin: 0.25rem 0 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.handbok .toc li {
+  margin: 0.1rem 0;
+}
+
+.handbok table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-size: 0.95em;
+}
+
+.handbok th,
+.handbok td {
+  border: 1px solid #d4d4d8;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.handbok th {
+  background: #f4f4f5;
+}
+
+/* Long URLs and addresses in table cells must not blow up the layout. */
+.handbok td {
+  overflow-wrap: anywhere;
+}
+
+article {
+  scroll-margin-top: 1rem;
+}
+
+@media print {
+  .handbok .toc {
+    display: none;
+  }
+  .handbok .chapter > h1 {
+    break-before: page;
+    border-top: none;
+  }
+}
