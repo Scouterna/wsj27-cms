@@ -50,8 +50,8 @@ next-env.d.ts
 # filesystem (the 9p devcontainer mount) — never commit it.
 .pnpm-store/
 
-# The graphic profile PDF is parked in the repo root for reference while the
-# design is applied; it is the design team's document, not this repo's.
+# The graphic profile PDF gets parked in the repo root while design work is
+# done; it is the design team's document, not this repo's — never commit it.
 /WSJ27SE_form*.pdf
 
 # The brand fonts are commercial and must never be committed to this public
