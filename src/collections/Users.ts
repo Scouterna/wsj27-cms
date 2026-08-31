@@ -17,8 +17,10 @@ const wsj27AuthStrategy: AuthStrategy = {
     if (!token) return { user: null }
 
     const claims = await verifyAndGetUser(token)
-    // No valid token, or a valid token without any wsj27-cms role, is treated
-    // as logged-out so the user lands on the "please log in" screen.
+    // No valid token, or a valid token without any CMS role — a wsj27-cms
+    // grant, or CMT membership which maps to editor (see cmsRolesFromClaims)
+    // — is treated as logged-out so the user lands on the "please log in"
+    // screen.
     if (!claims || claims.roles.length === 0) return { user: null }
 
     const roles = claims.roles.filter(

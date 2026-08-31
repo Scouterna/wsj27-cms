@@ -33,15 +33,44 @@ function getJwksConfig() {
 
 // wsj27-auth mints its own tokens but keeps Keycloak's claim shape, so client
 // roles arrive under resource_access.<client>.roles just like a Keycloak token.
+// The auth service splits each role string on its FIRST colon: "wsj27-cms:admin"
+// lands under the wsj27-cms client, "wsj27:cmt:kommunikation:it" under wsj27
+// with the role "cmt:kommunikation:it".
 interface AuthTokenPayload extends JWTPayload {
   resource_access?: {
     'wsj27-cms'?: {
+      roles: string[]
+    }
+    // Project-wide roles from the role map, e.g. "cmt:kommunikation:it".
+    wsj27?: {
       roles: string[]
     }
   }
   name?: string
   preferred_username?: string
   email?: string
+}
+
+/**
+ * The roles the CMS acts on, from the token's resource_access claim.
+ *
+ * Dedicated wsj27-cms client roles pass through as-is. On top of that, CMT
+ * membership — a project role `cmt` or `cmt:<team...>` under the wsj27
+ * client — counts as `editor`, so the core team can use the CMS without
+ * per-app grants in the role map. Admin (user management) still requires an
+ * explicit `wsj27-cms:admin`.
+ */
+export function cmsRolesFromClaims(resourceAccess: AuthTokenPayload['resource_access']): string[] {
+  const roles = [...(resourceAccess?.['wsj27-cms']?.roles ?? [])]
+
+  const isCmt = (resourceAccess?.wsj27?.roles ?? []).some(
+    (role) => role === 'cmt' || role.startsWith('cmt:'),
+  )
+  if (isCmt && !roles.includes('editor')) {
+    roles.push('editor')
+  }
+
+  return roles
 }
 
 export interface AuthUser {
@@ -67,7 +96,7 @@ export async function verifyAndGetUser(token: string): Promise<AuthUser | null> 
       name: payload.name ?? 'Okänd',
       email: payload.email ?? '',
       preferredUsername: payload.preferred_username ?? '',
-      roles: payload.resource_access?.['wsj27-cms']?.roles ?? [],
+      roles: cmsRolesFromClaims(payload.resource_access),
     }
   } catch (err) {
     console.error('[auth] verifyAndGetUser failed:', err)

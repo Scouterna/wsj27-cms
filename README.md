@@ -20,9 +20,11 @@ slides) are removed — WSJ27 will not have them.
   verifies the `wsj27-auth_access-token` cookie against the auth service's
   JWKS (discovered via `AUTH_DISCOVERY_URL`) and provisions a local mirror
   user just-in-time. There is no email/password form.
-- **Access requires a `wsj27-cms:admin` or `wsj27-cms:editor` role** in the
-  token. Roles come from wsj27-project-api's role map (Scoutnet-derived) — a
-  user without one of those roles is treated as logged out.
+- **Access requires a CMS role in the token**: `wsj27-cms:admin` or
+  `wsj27-cms:editor` from wsj27-project-api's role map — and CMT membership
+  (any `wsj27:cmt…` project role) counts as editor without a dedicated grant.
+  Everyone else is treated as logged out. Admin (user management) always
+  requires an explicit `wsj27-cms:admin`.
 - The Kubernetes manifests live in [k8s/](k8s/) in this repo, same pattern as
   the other WSJ27 services. The database is a dedicated role + database on the
   in-cluster Postgres.

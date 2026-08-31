@@ -59,11 +59,12 @@ deploy a git-SHA tag; CI pushes one per commit.
    curl -s -o /dev/null -w '%{http_code}\n' https://campfire.wsj27.scouterna.net/_services/cms
    ```
 
-5. **Give someone access.** Login is SSO-only via wsj27-auth-api, and the CMS
-   admits only tokens carrying a `wsj27-cms:admin` or `wsj27-cms:editor` role.
-   Those roles come from wsj27-project-api's role map — until it emits them,
-   **nobody can log in** (everything deploys and serves, but every login lands
-   on "please log in"). There is no local fallback account, by design.
+5. **Give someone access.** Login is SSO-only via wsj27-auth-api. CMT members
+   (any `wsj27:cmt…` project role) get editor access out of the box; everyone
+   else needs a `wsj27-cms:editor` grant in wsj27-project-api's role map, and
+   admin (user management) always requires an explicit `wsj27-cms:admin`.
+   A user with none of these is treated as logged out — there is no local
+   fallback account, by design.
 
 ## Constraints the manifests encode
 
