@@ -16,26 +16,30 @@ export const metadata = {
   description: 'Hela ledarhandboken för WSJ27, som en sida.',
 }
 
-// The profile's fonts (Bravely Script for headings, Lieberath Grotesque for
-// body text) come from the contingent's graphic package and are not committed
-// — drop the files into public/fonts/ and these declarations pick them up;
-// until then the CSS fallback stacks apply. Declared here rather than in the
-// stylesheet because the URLs need the runtime base path, which CSS url()
-// never gets prefixed with.
+// The profile's fonts are commercial (TeeFranklin, Suomi Type Foundry, is the
+// face behind the guide's "Lieberath Grotesque") so the files are not in this
+// public repository — they are served from a configmap mounted at
+// public/fonts/ (see k8s/). Without the mount these URLs 404 and the CSS
+// fallback stacks apply. Declared here rather than in the stylesheet because
+// the URLs need the runtime base path, which CSS url() never gets prefixed
+// with.
+//
+// Bravely Script ships as a single Regular cut but is declared at 700: the
+// headings ask for bold, and an exact match stops the browser from smearing
+// synthetic bold over a script face — while the fallback stack still renders
+// genuinely bold.
 const fontFaces = (basePath: string) =>
   [
-    { family: 'Bravely Script', weight: 700, file: 'BravelyScript' },
-    { family: 'Lieberath Grotesque', weight: 400, file: 'LieberathGrotesque-Regular' },
-    { family: 'Lieberath Grotesque', weight: 700, file: 'LieberathGrotesque-Bold' },
-    { family: 'Lieberath Grotesque', weight: 900, file: 'LieberathGrotesque-Heavy' },
+    { family: 'Bravely Script', weight: 700, file: 'BravelyScript-Regular' },
+    { family: 'Lieberath Grotesque', weight: 400, file: 'TeeFranklin-Book' },
+    { family: 'Lieberath Grotesque', weight: 700, file: 'TeeFranklin-Bold' },
   ]
     .map(
       ({ family, weight, file }) => `@font-face {
   font-family: '${family}';
   font-weight: ${weight};
   font-display: swap;
-  src: url('${basePath}/fonts/${file}.woff2') format('woff2'),
-    url('${basePath}/fonts/${file}.otf') format('opentype');
+  src: url('${basePath}/fonts/${file}.woff2') format('woff2');
 }`,
     )
     .join('\n')

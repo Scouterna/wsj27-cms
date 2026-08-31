@@ -51,7 +51,28 @@ deploy a git-SHA tag; CI pushes one per commit.
    `PAYLOAD_SECRET` signs Payload's own tokens/cookies — rotating it logs
    everyone out but destroys nothing.
 
-4. **Apply** (command at the top), then watch:
+4. **Create the font configmap.** The brand fonts (Bravely Script, and
+   TeeFranklin which is the face behind the profile's "Lieberath Grotesque")
+   are commercial and deliberately not in this public repository. They mount
+   into `public/fonts/` from a configmap; the volume is `optional`, so
+   without it the pages fall back to system fonts instead of failing:
+
+   ```bash
+   # from the contingent's graphic package; woff2_compress is in the
+   # `woff2` package on Debian
+   woff2_compress BravelyScript-Regular.otf
+   woff2_compress TeeFranklin-Book.otf      # a.k.a. TeeFraBoo.otf
+   woff2_compress TeeFranklin-Bold.otf      # a.k.a. TeeFraBol.otf
+   kubectl create configmap wsj27-cms-fonts -n wsj27 \
+     --from-file=BravelyScript-Regular.woff2 \
+     --from-file=TeeFranklin-Book.woff2 \
+     --from-file=TeeFranklin-Bold.woff2
+   ```
+
+   The file names are load-bearing — the @font-face declarations in
+   `src/app/(frontend)/handbok/page.tsx` reference them verbatim.
+
+5. **Apply** (command at the top), then watch:
 
    ```bash
    kubectl rollout status deploy/wsj27-cms -n wsj27
@@ -59,7 +80,7 @@ deploy a git-SHA tag; CI pushes one per commit.
    curl -s -o /dev/null -w '%{http_code}\n' https://campfire.wsj27.scouterna.net/_services/cms
    ```
 
-5. **Give someone access.** Login is SSO-only via wsj27-auth-api. CMT members
+6. **Give someone access.** Login is SSO-only via wsj27-auth-api. CMT members
    (any `wsj27:cmt…` project role) get editor access out of the box; everyone
    else needs a `wsj27-cms:editor` grant in wsj27-project-api's role map, and
    admin (user management) always requires an explicit `wsj27-cms:admin`.

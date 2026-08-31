@@ -45,7 +45,7 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              drop: ["ALL"]
+              drop: ['ALL']
             # readOnlyRootFilesystem is deliberately NOT set: Next.js
             # standalone writes its render/image cache under /app/.next.
           resources:
@@ -76,7 +76,22 @@ spec:
           volumeMounts:
             - name: uploads
               mountPath: /app/media
+            # The brand fonts (Bravely Script; TeeFranklin, the face behind
+            # the profile's "Lieberath Grotesque") are commercial and must not
+            # live in this public repository — they are served from a
+            # configmap instead, created imperatively (see README.md). Next's
+            # standalone server reads public/ at request time, so files
+            # mounted here appear under <basePath>/fonts/.
+            - name: fonts
+              mountPath: /app/public/fonts
+              readOnly: true
       volumes:
         - name: uploads
           persistentVolumeClaim:
             claimName: wsj27-cms-uploads
+        - name: fonts
+          configMap:
+            name: wsj27-cms-fonts
+            # The page falls back to system stacks without the fonts — a
+            # missing configmap must not stop the CMS from starting.
+            optional: true

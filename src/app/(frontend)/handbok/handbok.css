@@ -84,11 +84,12 @@
   margin-top: 4rem;
 }
 
-/* Section titles: Lieberath Heavy, mixed case — the guide's heading style for
- * contexts where Bravely reads too playful. */
+/* Section titles: mixed-case Lieberath — the guide's heading style for
+ * contexts where Bravely reads too playful. The guide says Heavy, but the
+ * graphic package ships Book and Bold only, so Bold it is. */
 .handbok h2 {
   font-family: var(--font-body);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 1.45rem;
   line-height: 1.25;
   color: var(--wsj-dark);
