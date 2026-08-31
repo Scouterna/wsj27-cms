@@ -21,8 +21,12 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        # The image runs as uid 1001 (nextjs). fsGroup makes the uploads volume
-        # group-writable for the pod's processes.
+        # The image's USER is the *name* nextjs (uid 1001), and kubelet cannot
+        # verify non-root from a name — with only runAsNonRoot the pod fails
+        # with CreateContainerConfigError. The explicit uid/gid settle it.
+        # fsGroup makes the uploads volume group-writable for the pod.
+        runAsUser: 1001
+        runAsGroup: 1001
         fsGroup: 1001
         seccompProfile:
           type: RuntimeDefault

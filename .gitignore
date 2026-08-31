@@ -46,6 +46,10 @@ next-env.d.ts
 # goes with it.
 .npmrc
 
+# pnpm puts its store inside the project when node_modules is on another
+# filesystem (the 9p devcontainer mount) — never commit it.
+.pnpm-store/
+
 /media
 
 # Playwright
