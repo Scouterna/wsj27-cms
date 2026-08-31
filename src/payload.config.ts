@@ -1,11 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { searchPlugin } from '@payloadcms/plugin-search'
-import {
-  EXPERIMENTAL_TableFeature,
-  FixedToolbarFeature,
-  LinkFeature,
-  lexicalEditor,
-} from '@payloadcms/richtext-lexical'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -18,6 +13,7 @@ import { en } from 'payload/i18n/en'
 import { sv } from 'payload/i18n/sv'
 import { InfoPage } from './collections/InfoPage'
 import { InfoChapters } from './collections/InfoChapters'
+import { editorFeatures } from './lib/editorFeatures'
 import { beforeSync } from './search/beforeSync'
 import { isEditor } from './access'
 
@@ -47,18 +43,9 @@ export default buildConfig({
     origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [],
   },
   collections: [Users, Media, InfoPage, InfoChapters],
-  editor: lexicalEditor({
-    features: ({ defaultFeatures }) => [
-      // The default link feature is replaced by one that also offers internal
-      // links, so editors link between info pages without hardcoding URLs.
-      ...defaultFeatures.filter((feature) => feature.key !== 'link'),
-      LinkFeature({ enabledCollections: ['info-page'] }),
-      // The handbook is full of tables (addresses, budget, changelog).
-      EXPERIMENTAL_TableFeature(),
-      // Long documents: keep the toolbar visible instead of inline-only.
-      FixedToolbarFeature(),
-    ],
-  }),
+  // The feature set lives in src/lib/editorFeatures.ts, shared with the
+  // handbook import script's HTML converter.
+  editor: lexicalEditor({ features: editorFeatures }),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

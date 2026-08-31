@@ -2,7 +2,9 @@ import type { FieldHook } from 'payload'
 
 // URL-safe slug: Swedish letters fold to their base (å/ä → a, ö → o) via
 // Unicode decomposition, everything else non-alphanumeric collapses to "-".
-const format = (value: string): string =>
+// Exported so scripts (the handbook import) produce the same slugs the hook
+// would.
+export const slugify = (value: string): string =>
   value
     .toLowerCase()
     .normalize('NFKD')
@@ -19,5 +21,5 @@ const format = (value: string): string =>
 export const formatSlug: FieldHook = ({ value, data }) => {
   const source =
     typeof value === 'string' && value.trim() !== '' ? value : (data?.title ?? data?.name)
-  return typeof source === 'string' ? format(source) : value
+  return typeof source === 'string' ? slugify(source) : value
 }

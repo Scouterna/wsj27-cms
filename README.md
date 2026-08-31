@@ -63,6 +63,22 @@ pnpm generate:types
 
 Both the migration files and `src/payload-types.ts` are committed.
 
+## Importing the handbook
+
+[scripts/import-handbook.ts](scripts/import-handbook.ts) turns an HTML export
+of the leader handbook (pandoc, command in the script header) into chapters
+and pages: H1s become chapters, H2s become one published page each, slugs are
+derived like the collection hook derives them, and re-runs upsert by slug —
+an edited Word export can be imported again without duplicating anything.
+
+```bash
+NODE_ENV=production DATABASE_URL=... PAYLOAD_SECRET=... \
+  pnpm exec tsx scripts/import-handbook.ts handboken.html [--dry-run]
+```
+
+`NODE_ENV=production` is load-bearing: it keeps the postgres adapter off dev
+push mode, so the script can never alter the schema it writes into.
+
 ## Building and deploying
 
 Every push builds `ghcr.io/scouterna/wsj27-cms` via
