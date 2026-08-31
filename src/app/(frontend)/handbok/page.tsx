@@ -16,6 +16,30 @@ export const metadata = {
   description: 'Hela ledarhandboken för WSJ27, som en sida.',
 }
 
+// The profile's fonts (Bravely Script for headings, Lieberath Grotesque for
+// body text) come from the contingent's graphic package and are not committed
+// — drop the files into public/fonts/ and these declarations pick them up;
+// until then the CSS fallback stacks apply. Declared here rather than in the
+// stylesheet because the URLs need the runtime base path, which CSS url()
+// never gets prefixed with.
+const fontFaces = (basePath: string) =>
+  [
+    { family: 'Bravely Script', weight: 700, file: 'BravelyScript' },
+    { family: 'Lieberath Grotesque', weight: 400, file: 'LieberathGrotesque-Regular' },
+    { family: 'Lieberath Grotesque', weight: 700, file: 'LieberathGrotesque-Bold' },
+    { family: 'Lieberath Grotesque', weight: 900, file: 'LieberathGrotesque-Heavy' },
+  ]
+    .map(
+      ({ family, weight, file }) => `@font-face {
+  font-family: '${family}';
+  font-weight: ${weight};
+  font-display: swap;
+  src: url('${basePath}/fonts/${file}.woff2') format('woff2'),
+    url('${basePath}/fonts/${file}.otf') format('opentype');
+}`,
+    )
+    .join('\n')
+
 export default async function HandbokPage() {
   const payload = await getPayload({ config: await config })
 
@@ -40,6 +64,7 @@ export default async function HandbokPage() {
 
   return (
     <div className="handbok">
+      <style>{fontFaces(process.env.NEXT_PUBLIC_BASE_PATH || '')}</style>
       <div className="handbok-inner">
         <header>
           <p className="kicker">WSJ27</p>

@@ -1,11 +1,35 @@
-/* Scoped under .handbok — the template's global styles.css paints the whole
- * frontend black-on-white-inverted, so this page brings its own ground. */
+/* WSJ27SE graphic profile ("WSJ27SE_form version 8"), applied to the handbook.
+ *
+ * The official color family — base #CE4A17, darker contrast #9A3616, lighter
+ * contrast #E66B45 — used tone-on-tone: the guide reserves it for the
+ * contingent's official material, which a leader handbook is. Flat design
+ * throughout: hierarchy through color plates and contrast, no shadows or
+ * gradients.
+ *
+ * Typography per the guide: headings in Bravely Script, ALWAYS uppercase,
+ * white on a base-color plate or base-color on white; body text in Lieberath
+ * Grotesque Normal with Bold for subheadings, and Heavy for headings where
+ * Bravely reads too playful. The fonts ship in the contingent's graphic
+ * package and are not committed here — @font-face lives in page.tsx (it needs
+ * the runtime base path); until the files land in public/fonts/ the fallback
+ * stacks below apply.
+ *
+ * Scoped under .handbok — the template's global styles.css paints the rest of
+ * the frontend black, so this page brings its own ground. */
 
 .handbok {
+  --wsj-base: #ce4a17;
+  --wsj-dark: #9a3616;
+  --wsj-light: #e66b45;
+  --wsj-ink: #1d1d1f;
+  --font-heading: 'Bravely Script', 'Lieberath Grotesque', system-ui, sans-serif;
+  --font-body: 'Lieberath Grotesque', system-ui, sans-serif;
+
   min-height: 100vh;
   background: #fff;
-  color: #1d1d1f;
-  font-family: system-ui, sans-serif;
+  color: var(--wsj-ink);
+  font-family: var(--font-body);
+  font-weight: 400;
   font-size: 17px;
   line-height: 1.6;
 }
@@ -16,64 +40,124 @@
   padding: 2rem 1.25rem 6rem;
 }
 
-.handbok header .kicker {
-  margin: 0;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #6d28d9;
+/* Header: a flat plate in the base color, wordmark-style. */
+.handbok header {
+  background: var(--wsj-base);
+  color: #fff;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
+.handbok header .kicker {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.handbok header h1 {
+  margin: 0.25rem 0 0;
+  border: none;
+  padding: 0;
+  color: #fff;
+}
+
+/* Bravely Script is uppercase-only by rule. */
 .handbok h1 {
-  font-size: 2rem;
-  line-height: 1.2;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-size: 2.4rem;
+  line-height: 1.15;
+  font-weight: 700;
   margin: 0 0 0.5rem;
 }
 
+/* Chapters as color plates: flat blocks segment the long page the way the
+ * profile uses "penseldrag" plates instead of shadows. */
 .handbok .chapter > h1 {
+  background: var(--wsj-base);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
   margin-top: 4rem;
-  padding-top: 1.5rem;
-  border-top: 3px solid #6d28d9;
 }
 
+/* Section titles: Lieberath Heavy, mixed case — the guide's heading style for
+ * contexts where Bravely reads too playful. */
 .handbok h2 {
-  font-size: 1.4rem;
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  color: var(--wsj-dark);
   margin: 2.5rem 0 0.5rem;
 }
 
 .handbok h3 {
+  font-weight: 700;
   font-size: 1.15rem;
   margin: 1.75rem 0 0.25rem;
 }
 
 .handbok h4 {
+  font-weight: 700;
   font-size: 1rem;
   margin: 1.5rem 0 0.25rem;
 }
 
-.handbok a {
-  color: #6d28d9;
-}
-
-.handbok .toc {
-  margin: 2rem 0 1rem;
-  padding: 1rem 1.25rem;
-  background: #f5f3ff;
-  border-radius: 8px;
-}
-
-.handbok .toc-chapter > a {
+.handbok strong {
   font-weight: 700;
+}
+
+.handbok a {
+  color: var(--wsj-dark);
+  text-decoration-color: var(--wsj-light);
+  text-decoration-thickness: 2px;
+}
+
+/* Table of contents: the dark contrast as a flat plate, tone-on-tone with the
+ * chapter plates. */
+.handbok .toc {
+  margin: 0 0 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--wsj-dark);
+  color: #fff;
+  border-radius: 12px;
+}
+
+.handbok .toc a {
+  color: #fff;
   text-decoration: none;
 }
 
+.handbok .toc a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--wsj-light);
+  text-decoration-thickness: 2px;
+}
+
+.handbok .toc-chapter > a {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+}
+
 .handbok .toc ul {
-  margin: 0.25rem 0 0.75rem;
+  margin: 0.25rem 0 1rem;
   padding-left: 1.25rem;
+  list-style: none;
 }
 
 .handbok .toc li {
-  margin: 0.1rem 0;
+  margin: 0.15rem 0;
+}
+
+.handbok .toc-chapter:last-child ul {
+  margin-bottom: 0;
 }
 
 .handbok table {
@@ -85,14 +169,16 @@
 
 .handbok th,
 .handbok td {
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--wsj-light);
   padding: 0.4rem 0.6rem;
   text-align: left;
   vertical-align: top;
 }
 
 .handbok th {
-  background: #f4f4f5;
+  background: var(--wsj-base);
+  color: #fff;
+  font-weight: 700;
 }
 
 /* Long URLs and addresses in table cells must not blow up the layout. */
@@ -110,6 +196,16 @@ article {
   }
   .handbok .chapter > h1 {
     break-before: page;
-    border-top: none;
+    background: none;
+    color: var(--wsj-base);
+    padding: 0;
+  }
+  .handbok header {
+    background: none;
+    color: var(--wsj-base);
+    padding: 0;
+  }
+  .handbok header h1 {
+    color: var(--wsj-base);
   }
 }
