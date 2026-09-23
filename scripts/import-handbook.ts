@@ -185,6 +185,13 @@ async function attachUploads(
 interface Section {
   chapterIndex: number
   title: string
+  elements: Element[]
+}
+
+/** A section once its elements have been serialised and ordered. */
+interface PageSection {
+  chapterIndex: number
+  title: string
   html: string
   order: number
 }
@@ -204,54 +211,121 @@ function chapterName(raw: string): string {
   return trimmed
 }
 
+const normalise = (value: string) => value.replace(/\s+/g, ' ').trim()
+
+/**
+ * "1. Samlingar", "4 Samlingar" and "Samlingar" all reduce to the same key.
+ *
+ * The numbering in Word is not dependable — Bilaga 1 writes its first two
+ * sections with a period after the number and its last two without — so the
+ * number is stripped before comparing rather than parsed.
+ */
+const sectionKey = (value: string) =>
+  normalise(value)
+    .replace(/^\d+\s*[.)]?\s*/, '')
+    .toLocaleLowerCase('sv')
+
+/**
+ * A chapter's own contents list, when it has one: the `<ol>`/`<ul>` right after
+ * a paragraph that says "Innehåll".
+ *
+ * This is what lets a chapter written without H2s still become more than one
+ * page. Bilaga 1 is 48 000 characters and marks its four sections as ordinary
+ * paragraphs, so there is nothing structural to split on — but the appendix
+ * lists those four sections itself, and a document's own index is a better
+ * authority than a guess about what a heading looks like.
+ */
+function findContentsList(elements: Element[]): { at: number; titles: string[] } | null {
+  for (let i = 0; i < elements.length - 1; i++) {
+    const el = elements[i]
+    if (el.tagName.toLowerCase() !== 'p') continue
+    if (!/^inneh[åa]ll/i.test(normalise(el.textContent ?? ''))) continue
+
+    const list = elements[i + 1]
+    const tag = list?.tagName.toLowerCase()
+    if (tag !== 'ol' && tag !== 'ul') continue
+
+    const titles = Array.from(list.querySelectorAll('li'))
+      .map((li) => normalise(li.textContent ?? ''))
+      .filter(Boolean)
+    if (titles.length > 1) return { at: i, titles }
+  }
+  return null
+}
+
+/**
+ * A run of paragraphs labelled "<Word> 1", "<Word> 2", … inside one section.
+ *
+ * Bilaga 1's longest section is a course day written as eight passes, each
+ * introduced by an ordinary paragraph — no heading, no bold, and sometimes a
+ * `<br>` inside the title. Left whole it is a single page of 35 000 characters
+ * that nobody can navigate, so the series is what splits it.
+ *
+ * The rule is deliberately narrow: the numbers must run 1, 2, 3 … without a
+ * gap or a repeat, and there must be at least three. The same document also
+ * says "Avdelningsförträff 1" twice and "Avdelningsförträff 2" once, in a
+ * comparison rather than as sections — 1, 1, 2 fails the test, which is the
+ * whole reason the test is shaped this way.
+ */
+function findSeries(elements: Element[]): Map<number, string> | null {
+  const byLabel = new Map<string, { index: number; num: number; title: string }[]>()
+
+  elements.forEach((el, index) => {
+    if (el.tagName.toLowerCase() !== 'p') return
+    const text = normalise(el.textContent ?? '')
+    if (text.length > 90) return
+
+    const match = /^(\p{L}[\p{L}-]{2,})\s+(\d+)\s*[–—-]?\s*(.*)$/u.exec(text)
+    if (!match) return
+
+    const [, label, digits, rest] = match
+    const hits = byLabel.get(label) ?? []
+    // Rebuilt rather than taken as written: a `<br>` in the middle leaves the
+    // dash glued to the number ("Kurspass 2– Att åka …").
+    hits.push({
+      index,
+      num: Number(digits),
+      title: rest ? `${label} ${Number(digits)} – ${rest}` : `${label} ${Number(digits)}`,
+    })
+    byLabel.set(label, hits)
+  })
+
+  for (const hits of byLabel.values()) {
+    if (hits.length < 3) continue
+    if (!hits.every((hit, n) => hit.num === n + 1)) continue
+    return new Map(hits.map((hit) => [hit.index, hit.title]))
+  }
+
+  return null
+}
+
 function parseHandbook(html: string): {
   chapters: Chapter[]
-  sections: Section[]
+  sections: PageSection[]
   /** `<img src>` to its alt text, for the Media documents the images become. */
   imageAlts: Map<string, string>
 } {
   const dom = new JSDOM(html)
   const chapters: Chapter[] = []
-  const sections: Section[] = []
-  let current: Section | null = null
+  const perChapter: Element[][] = []
   const imageAlts = new Map<string, string>()
 
+  // Pass one: everything under each H1. Splitting needs to see a whole chapter
+  // at once, because a chapter without H2s is split on a list that appears
+  // inside it.
   for (const el of Array.from(dom.window.document.body.children)) {
-    const tag = el.tagName.toLowerCase()
-
-    if (tag === 'h1') {
+    if (el.tagName.toLowerCase() === 'h1') {
       const name = chapterName(el.textContent ?? '')
-      current = null
       // Empty H1s are Word artifacts (page-break carriers); skip, and keep
       // "no current chapter" so stray content under them is dropped too.
       if (name) {
         chapters.push({ name, slug: slugify(name), order: chapters.length * 10 })
+        perChapter.push([])
       }
       continue
     }
-
     if (chapters.length === 0) continue // cover page + rendered TOC
 
-    if (tag === 'h2') {
-      const title = (el.textContent ?? '').trim()
-      if (!title) continue
-      current = {
-        chapterIndex: chapters.length - 1,
-        title,
-        html: '',
-        order: sections.filter((s) => s.chapterIndex === chapters.length - 1).length * 10,
-      }
-      sections.push(current)
-      continue
-    }
-
-    if (!current) {
-      // Chapter preamble: content between the H1 and its first H2 becomes a
-      // page named after the chapter itself.
-      const chapter = chapters[chapters.length - 1]
-      current = { chapterIndex: chapters.length - 1, title: chapter.name, html: '', order: 0 }
-      sections.push(current)
-    }
     // Word's images arrive as `<img src="media/image4.png">`, a path relative to
     // the HTML file that pandoc writes with --extract-media. The converter turns
     // each one into an `upload` node carrying that src but no document, which
@@ -263,10 +337,95 @@ function parseHandbook(html: string): {
       const src = img.getAttribute('src')
       if (src) imageAlts.set(src, (img.getAttribute('alt') ?? '').trim())
     }
-    current.html += el.outerHTML
+
+    perChapter[perChapter.length - 1].push(el)
   }
 
-  return { chapters, sections: sections.filter((s) => s.html.trim() !== ''), imageAlts }
+  // Pass two: each chapter into sections.
+  const sections: Section[] = []
+  for (const [chapterIndex, elements] of perChapter.entries()) {
+    const chapter = chapters[chapterIndex]
+    const hasHeadings = elements.some((el) => el.tagName.toLowerCase() === 'h2')
+    const contents = hasHeadings ? null : findContentsList(elements)
+    const wanted = new Map(contents?.titles.map((t) => [sectionKey(t), t]) ?? [])
+
+    let current: Section | null = null
+    const open = (title: string) => {
+      current = { chapterIndex, title, elements: [] }
+      sections.push(current)
+    }
+
+    for (const [i, el] of elements.entries()) {
+      const tag = el.tagName.toLowerCase()
+
+      if (tag === 'h2') {
+        const title = normalise(el.textContent ?? '')
+        if (title) open(title)
+        continue
+      }
+
+      if (wanted.size > 0) {
+        // The index itself is navigation, and the site builds its own from the
+        // pages below — the same reason Word's document-level TOC is dropped.
+        if (contents && (i === contents.at || i === contents.at + 1)) continue
+
+        if (tag === 'p') {
+          const title = wanted.get(sectionKey(el.textContent ?? ''))
+          if (title) {
+            open(title)
+            continue
+          }
+        }
+      }
+
+      if (!current) {
+        // Chapter preamble: content before the first section becomes a page
+        // named after the chapter itself.
+        open(chapter.name)
+      }
+      current!.elements.push(el)
+    }
+  }
+
+  // Pass three: a section that is really a numbered series becomes one page per
+  // item. Only sections split by a contents list are considered — a chapter
+  // written with proper H2s already says where its pages begin, and second
+  // -guessing that would turn a well-structured document into a worse one.
+  const split: Section[] = []
+  for (const section of sections) {
+    const series = perChapter[section.chapterIndex].some((el) => el.tagName.toLowerCase() === 'h2')
+      ? null
+      : findSeries(section.elements)
+
+    if (!series) {
+      split.push(section)
+      continue
+    }
+
+    let part: Section = { ...section, elements: [] }
+    split.push(part)
+    section.elements.forEach((el, i) => {
+      const title = series.get(i)
+      if (title) {
+        part = { chapterIndex: section.chapterIndex, title, elements: [] }
+        split.push(part)
+        return
+      }
+      part.elements.push(el)
+    })
+  }
+
+  return {
+    chapters,
+    sections: split
+      .map((s) => ({ ...s, html: s.elements.map((el) => el.outerHTML).join('') }))
+      .filter((s) => s.html.trim() !== '')
+      .map((s, _i, all) => ({
+        ...s,
+        order: all.filter((o) => o.chapterIndex === s.chapterIndex).indexOf(s) * 10,
+      })),
+    imageAlts,
+  }
 }
 
 async function main() {

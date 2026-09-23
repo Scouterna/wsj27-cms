@@ -226,6 +226,23 @@ and pages: H1s become chapters, H2s become one published page each, slugs are
 derived like the collection hook derives them, and re-runs upsert by slug —
 an edited Word export can be imported again without duplicating anything.
 
+**A chapter written without H2s is split on what it says about itself.** Bilaga
+1 is 48 000 characters under a single H1: its sections are ordinary paragraphs,
+numbered inconsistently (`1.` and `2.` with a period, `3` and `4` without), so
+there is no heading to split on and no dependable number either. What it does
+have is its own "Innehåll:" list, and a document's index is a better authority
+than a guess about what a heading looks like — so the importer splits on the
+paragraphs matching that list, ignoring any leading number.
+
+Its longest section is split once more, on a **numbered series**: a run of
+paragraphs labelled `<Word> 1`, `<Word> 2`, … that counts from one without a
+gap or a repeat, at least three long. That turns the course day into a page per
+pass. The test is strict for a reason — the same appendix writes
+"Avdelningsförträff 1" twice and "Avdelningsförträff 2" once, as a comparison
+rather than as sections, and 1, 1, 2 must not look like a series. A chapter
+that uses H2s is left alone by both rules: it has already said where its pages
+begin.
+
 ```bash
 NODE_ENV=production DATABASE_URL=... PAYLOAD_SECRET=... \
   pnpm exec tsx scripts/import-handbook.ts handboken.html [--dry-run]
