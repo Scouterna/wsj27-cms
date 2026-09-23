@@ -202,7 +202,10 @@ export interface InfoPage {
    * Sidans ordning inom kapitlet, lägst först.
    */
   order?: number | null;
-  audience: 'alla' | 'ledare';
+  /**
+   * Campfire-sidor visas inte på den publika handboken.
+   */
+  audience: 'publik' | 'campfire';
   /**
    * En mening till läsarna om vad som ändrades. Den hamnar överst på handboken under "Senaste ändringarna". Lämna tomt för rättstavning och annat ingen behöver läsa om — sidans uppdaterat-datum sätts ändå. Töm fältet för att ta bort raden ur listan.
    */

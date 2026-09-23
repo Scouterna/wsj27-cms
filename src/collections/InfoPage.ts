@@ -85,21 +85,28 @@ export const InfoPage: CollectionConfig = {
       },
     },
     {
-      // A marker for the consuming app's navigation, not an access rule: the
-      // read API stays public, and the CMS cannot authenticate plain leaders —
-      // only users with a wsj27-cms role get a Payload user. Anything that
-      // must actually be secret does not belong in this collection.
+      // Who the page is written for, and with it where it is shown: `publik`
+      // appears on /handbok, `campfire` is left out of it and reaches readers
+      // through the Campfire app instead.
+      //
+      // **This is not an access rule.** The read API stays public, so a
+      // `campfire` page is still served by /api/info-page to anyone who asks —
+      // it is out of the public handbook, not out of reach. The CMS cannot
+      // authenticate plain leaders either; only users with a wsj27-cms role get
+      // a Payload user. Anything that must actually be secret does not belong
+      // in this collection.
       name: 'audience',
       label: 'Målgrupp',
       type: 'select',
       required: true,
-      defaultValue: 'alla',
+      defaultValue: 'publik',
       options: [
-        { label: 'Alla', value: 'alla' },
-        { label: 'Ledare', value: 'ledare' },
+        { label: 'Publik', value: 'publik' },
+        { label: 'Campfire', value: 'campfire' },
       ],
       admin: {
         position: 'sidebar',
+        description: 'Campfire-sidor visas inte på den publika handboken.',
       },
     },
     {

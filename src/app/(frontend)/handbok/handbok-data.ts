@@ -41,6 +41,14 @@ export async function loadHandbook(): Promise<Handbook> {
     payload.find({
       collection: 'info-page',
       draft: false,
+      // The public handbook shows the pages written for it. `campfire` pages
+      // reach their readers through the Campfire app instead, and leaving them
+      // out here is the whole point of the field.
+      //
+      // It is not a secret: /api/info-page is open, so a campfire page is still
+      // served to anyone who asks for it by slug. This keeps it off the public
+      // handbook, nothing more.
+      where: { audience: { equals: 'publik' } },
       sort: 'order',
       limit: 500,
       // Deep enough to populate the images. The default upload converter

@@ -24,6 +24,16 @@ Handbok; the API paths, the database tables and `src/payload-types.ts` keep
 migration and invalidates every stored reference — so the display name is what
 follows the content's name, and the slug stays put.
 
+**`Målgrupp` decides whether a page is on the public handbook.** `Publik` pages
+render on /handbok and in its printable version; `Campfire` pages are left out
+and reach their readers through the Campfire app instead. Every page is
+`Publik` today.
+
+It is **not** an access rule. `/api/info-page` is open, so a Campfire page is
+still served to anyone who asks for it by slug — the field keeps a page off the
+public handbook, nothing more. Anything that must actually be secret does not
+belong in this collection.
+
 **The admin list opens in the handbook's own order**, chapter by chapter, and
 shows the whole handbook on one screen. Without that it opens newest-first,
 which right after an import means the pages it just created, backwards. The
@@ -127,6 +137,21 @@ that is already long. Reading the DOM also cannot drift: what is searchable is
 exactly what is on the page. The index is built on the first keystroke, from an
 event handler — not on mount in an effect, which the React compiler rejects as
 a cascading render, and not in a ref, which may not be read while rendering.
+
+**A hit is marked where it stands, not only counted.** The list answers which
+page holds the word, which on a page of 48 000 characters still leaves the
+reader scanning for it; the marks answer where. They are painted with the CSS
+Custom Highlight API — ranges laid over the text as it is — rather than by
+wrapping matches in `<mark>`: nothing is inserted into the rendered rich text
+on a keystroke and nothing has to be unpicked on the next. The marks and the
+list read the same folded index in
+[handbok-search.ts](<src/app/(frontend)/handbok/handbok-search.ts>), so the page
+the list names is the page the marks appear on. That index folds character by
+character, because folding is not always one character to one — "ﬁ" becomes two
+and "½" three — and the handbook is imported from a word processor, which is
+where those arrive from; one of them early in a paragraph would move every mark
+after it onto the wrong word. A browser without the Highlight API gets the
+filtered list and no marks.
 
 **The printer icon leads to `/handbok/utskrift`, a separate route.** The two
 want different documents: the reading view is navigated and searched and leads

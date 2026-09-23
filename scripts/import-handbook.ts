@@ -522,7 +522,7 @@ async function main() {
       slug: pageSlugs[i],
       chapter: chapterIds[s.chapterIndex],
       order: s.order,
-      audience: 'ledare' as const,
+      audience: 'publik' as const,
       content,
       _status: 'published' as const,
     }
