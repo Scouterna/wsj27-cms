@@ -592,7 +592,7 @@ async function main() {
   }
 
   console.log(
-    `done: ${chapters.length} chapters upserted, ${created} pages created, ` +
+    `done: ${usedChapters.size} chapters upserted, ${created} pages created, ` +
       `${updated} updated, ${unchanged} unchanged, ${skipped} skipped`,
   )
 }
