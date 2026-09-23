@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isEditor } from '../access'
 import { formatSlug } from '../fields/slug'
+import { stampChangeNote } from '../fields/changeNote'
 
 export const InfoPage: CollectionConfig = {
   slug: 'info-page',
@@ -82,6 +83,33 @@ export const InfoPage: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
+      },
+    },
+    {
+      // Reader-facing: the note, not the timestamp, is what puts a page in
+      // "Senaste ändringarna" on /handbok. Left empty the page still shows its
+      // updated date — which is the point, since most saves are not news.
+      name: 'changeNote',
+      label: 'Vad ändrades',
+      type: 'textarea',
+      localized: true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'En mening till läsarna om vad som ändrades. Den hamnar överst på handboken under "Senaste ändringarna". Lämna tomt för rättstavning och annat ingen behöver läsa om — sidans uppdaterat-datum sätts ändå. Töm fältet för att ta bort raden ur listan.',
+      },
+    },
+    {
+      name: 'changeNoteAt',
+      label: 'Noten skrevs',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Sätts automatiskt när noten ändras. Se src/fields/changeNote.ts.',
+      },
+      hooks: {
+        beforeChange: [stampChangeNote],
       },
     },
     {

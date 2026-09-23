@@ -70,6 +70,35 @@ traefik nor `next.config` can do it instead. Two things follow:
   a 404, and shipping the middleware without the ingress path never gets a
   request.
 
+## Telling readers what changed
+
+Only `info-page` is versioned (`versions: { drafts: true }`), so it is the one
+collection with drafts, a version history and a restore. Chapters, media and
+users have none — an edit there overwrites, with no history and no undo. The
+history records _what_ and _when_ but never _who_: Payload's version tables
+carry no author column, and deleting a page deletes its versions with it. It is
+not a recycle bin, and there is no database backup behind it.
+
+On top of that, `/handbok` shows readers two things, and the split between them
+is the whole design:
+
+|                                               | Where it comes from                 | What it is for                                   |
+| --------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
+| `Uppdaterad <datum>` under every page heading | `updatedAt`, automatic              | Answers "is what I read last time still current" |
+| A `Senaste ändringarna` list at the top       | `changeNote`, written by the editor | Answers "what actually changed"                  |
+
+**An editor who fixes a comma leaves the note alone**, and the page keeps its
+place in the list with its old date, because `changeNoteAt` is stamped only
+when the note itself changes ([src/fields/changeNote.ts](src/fields/changeNote.ts)).
+Sorting the list by `updatedAt` instead would lift a months-old note to the top
+and date it today — announcing a change that was never made. Emptying the note
+removes the page from the list; the updated date stays.
+
+The list needs no limit: a page holds one note at a time, so it can never be
+longer than the handbook has pages, and editors prune it by clearing fields.
+Only pages that belong to a chapter can appear, because a standalone page has
+no anchor on `/handbok` to link to.
+
 ## How it fits the WSJ27 platform
 
 - Served at **`https://campfire.wsj27.scouterna.net/_services/cms`** — the same

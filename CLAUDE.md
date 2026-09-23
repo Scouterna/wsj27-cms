@@ -69,6 +69,9 @@ Three habits that keep it true:
   CMS serves production at campfire, `prodMigrations` runs at boot, so a
   production database exists and holds `init` as applied. Never edit an
   existing migration, and never re-squash — append.
+  `20260922_232632_add_change_note` is the first appended one and is what a new
+  migration should look like: additive `ALTER TABLE ... ADD COLUMN`, with a
+  `down` that drops exactly those columns.
 - **Check the statement order of generated migrations that drop tables.** The
   generator has emitted `DROP TABLE ... CASCADE` before the `DROP CONSTRAINT`
   statements for FKs referencing that table — the cascade takes the constraint

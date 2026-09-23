@@ -44,6 +44,20 @@ const fontFaces = (basePath: string) =>
     )
     .join('\n')
 
+// Dates are rendered in the contingent's timezone, not the server's: a page
+// published at 23:30 Swedish time is a UTC tomorrow, and a handbook that says
+// a change landed the day after it did is the kind of small wrongness readers
+// notice and remember.
+const formatDate = (value?: string | null): string | null =>
+  value
+    ? new Intl.DateTimeFormat('sv-SE', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Europe/Stockholm',
+      }).format(new Date(value))
+    : null
+
 export default async function HandbokPage() {
   const payload = await getPayload({ config: await config })
 
@@ -66,6 +80,21 @@ export default async function HandbokPage() {
     byChapter.set(chapterId, [...(byChapter.get(chapterId) ?? []), page])
   }
 
+  // Only pages that are rendered below can be announced: a note on a
+  // standalone page would link to an anchor this page never writes. Sorted by
+  // when the note was written, which is deliberately not when the page was
+  // last saved — see src/fields/changeNote.ts.
+  //
+  // The list needs no limit. A page holds one note at a time, so it can never
+  // be longer than the handbook has pages, and an entry leaves it when an
+  // editor clears the field.
+  const announced = pages.docs
+    .filter((page) => {
+      const chapterId = typeof page.chapter === 'object' ? page.chapter?.id : page.chapter
+      return chapterId != null && byChapter.has(chapterId) && page.changeNote?.trim()
+    })
+    .sort((a, b) => (b.changeNoteAt ?? '').localeCompare(a.changeNoteAt ?? ''))
+
   return (
     <div className="handbok">
       <style>{fontFaces(process.env.NEXT_PUBLIC_BASE_PATH || '')}</style>
@@ -74,6 +103,25 @@ export default async function HandbokPage() {
           <p className="kicker">WSJ27</p>
           <h1>Handboken</h1>
         </header>
+
+        {announced.length > 0 && (
+          <section aria-labelledby="senaste-andringarna" className="changelog">
+            <h2 id="senaste-andringarna">Senaste ändringarna</h2>
+            <ol>
+              {announced.map((page) => (
+                <li key={page.id}>
+                  <p className="changelog-meta">
+                    {page.changeNoteAt && (
+                      <time dateTime={page.changeNoteAt}>{formatDate(page.changeNoteAt)}</time>
+                    )}
+                    <a href={`#${page.slug}`}>{page.title}</a>
+                  </p>
+                  <p className="changelog-note">{page.changeNote}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         <nav aria-label="Innehåll" className="toc">
           {chapters.docs.map((chapter) => (
@@ -98,6 +146,11 @@ export default async function HandbokPage() {
             {(byChapter.get(chapter.id) ?? []).map((page) => (
               <article key={page.id} id={page.slug}>
                 <h2>{page.title}</h2>
+                {page.updatedAt && (
+                  <p className="updated">
+                    Uppdaterad <time dateTime={page.updatedAt}>{formatDate(page.updatedAt)}</time>
+                  </p>
+                )}
                 <RichText data={page.content as SerializedEditorState} />
               </article>
             ))}

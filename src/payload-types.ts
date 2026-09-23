@@ -203,6 +203,14 @@ export interface InfoPage {
    */
   order?: number | null;
   audience: 'alla' | 'ledare';
+  /**
+   * En mening till läsarna om vad som ändrades. Den hamnar överst på handboken under "Senaste ändringarna". Lämna tomt för rättstavning och annat ingen behöver läsa om — sidans uppdaterat-datum sätts ändå. Töm fältet för att ta bort raden ur listan.
+   */
+  changeNote?: string | null;
+  /**
+   * Sätts automatiskt när noten ändras. Se src/fields/changeNote.ts.
+   */
+  changeNoteAt?: string | null;
   icon?: string | null;
   content: {
     root: {
@@ -420,6 +428,8 @@ export interface InfoPageSelect<T extends boolean = true> {
   chapter?: T;
   order?: T;
   audience?: T;
+  changeNote?: T;
+  changeNoteAt?: T;
   icon?: T;
   content?: T;
   updatedAt?: T;

@@ -161,6 +161,66 @@
   margin-bottom: 0;
 }
 
+/* Change log: a white card with a flat base-colour rule, not a third filled
+ * plate. The header and the chapters are already solid base, the contents is
+ * solid dark, and a fourth block of colour would stop any of them meaning
+ * anything. */
+.handbok .changelog {
+  margin: 0 0 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--wsj-base);
+  border-radius: 12px;
+}
+
+.handbok .changelog h2 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-size: 1.35rem;
+  color: var(--wsj-base);
+  margin: 0 0 0.75rem;
+}
+
+.handbok .changelog ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.handbok .changelog li + li {
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--wsj-light);
+  padding-top: 0.9rem;
+}
+
+.handbok .changelog-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.6rem;
+  align-items: baseline;
+}
+
+.handbok .changelog-meta time {
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--wsj-dark);
+  white-space: nowrap;
+}
+
+.handbok .changelog-note {
+  margin: 0.15rem 0 0;
+}
+
+/* Per page: quiet by design. It is on every page, so it has to stay out of the
+ * way of the text it dates. */
+.handbok .updated {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--wsj-dark);
+}
+
 .handbok table {
   border-collapse: collapse;
   width: 100%;
