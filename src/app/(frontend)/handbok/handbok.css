@@ -247,6 +247,30 @@
   border-color: var(--wsj-light);
 }
 
+/* Search hits in the text, painted from HandbokNav through the CSS Custom
+ * Highlight API: ranges laid over the text as it stands, so the rendered rich
+ * text is never rewritten — nothing to insert on a keystroke and nothing to
+ * unpick on the next. A browser without the API shows the filtered list and no
+ * marks, which is the same handbook without the shortcut. The name below is
+ * `HIGHLIGHT_NAME` in handbok-search.ts — the one string this file and that
+ * one have to agree on.
+ *
+ * Amber is off the profile's palette on purpose: its three colors are already
+ * the plates and the headings here, so a hit painted in one of them would read
+ * as more of the layout, and a mark has one job. Written out rather than taken
+ * from a custom property because a highlight pseudo-element inherits through a
+ * chain of its own — whether it can see the properties set on .handbok is up
+ * to the browser, and an unresolved var() is a transparent plate, which is a
+ * mark nobody can see.
+ *
+ * No `color`: unset leaves each hit in the color it already had, so a bold
+ * subheading stays the profile's dark red on the amber instead of being
+ * flattened to body ink. ::highlight() takes colors and text decoration only —
+ * no padding, no radius — so the plate is the background and nothing more. */
+.handbok ::highlight(handbok-traff) {
+  background-color: #ffd166;
+}
+
 .handbok-search-count {
   margin: 0.35rem 0 0;
   min-height: 1.2em;

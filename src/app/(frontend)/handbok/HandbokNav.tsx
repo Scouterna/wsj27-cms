@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { type ArticleIndex, fold, highlightMatches, indexArticles } from './handbok-search'
+
 export interface NavPage {
   slug: string
   title: string
@@ -12,9 +14,6 @@ export interface NavChapter {
   name: string
   pages: NavPage[]
 }
-
-/** Fold Swedish letters so "forberedelser" finds "Förberedelser". */
-const fold = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
 
 const IconMenu = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
@@ -48,6 +47,12 @@ const IconPrinter = () => (
  * 48 000 characters — so sending a second copy for searching would roughly
  * double a page that is already long. Reading the DOM also cannot drift: what
  * is searchable is exactly what is on the page.
+ *
+ * **A hit is marked where it stands, not just counted.** The list answers
+ * which page holds the word, which on a page of 48 000 characters leaves the
+ * reader to find it by eye; the marks answer where. Both read the same index,
+ * so the page the list names is the page the marks appear on — see
+ * `handbok-search.ts`.
  */
 export function HandbokNav({
   chapters,
@@ -62,7 +67,7 @@ export function HandbokNav({
   const [query, setQuery] = useState('')
   const [active, setActive] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
-  const [texts, setTexts] = useState<Map<string, string> | null>(null)
+  const [index, setIndex] = useState<Map<string, ArticleIndex> | null>(null)
 
   // Built on the first keystroke, from an event handler. Not on mount in an
   // effect — that is a setState the React compiler rejects as a cascading
@@ -70,14 +75,7 @@ export function HandbokNav({
   // the DOM during render is out too, since this component renders on the
   // server as well.
   const buildIndex = useCallback(() => {
-    setTexts((existing) => {
-      if (existing) return existing
-      const map = new Map<string, string>()
-      for (const el of document.querySelectorAll<HTMLElement>(`#${contentId} article[id]`)) {
-        map.set(el.id, fold(el.textContent ?? ''))
-      }
-      return map
-    })
+    setIndex((existing) => existing ?? indexArticles(contentId))
   }, [contentId])
 
   // Which page is being read, so the nav says where you are in a document this
@@ -116,13 +114,22 @@ export function HandbokNav({
       .map((chapter) => ({
         ...chapter,
         pages: chapter.pages.filter(
-          (page) => fold(page.title).includes(needle) || texts?.get(page.slug)?.includes(needle),
+          (page) =>
+            fold(page.title).includes(needle) || index?.get(page.slug)?.text.includes(needle),
         ),
       }))
       .filter((chapter) => chapter.pages.length > 0 || fold(chapter.name).includes(needle))
-  }, [chapters, needle, texts])
+  }, [chapters, index, needle])
 
   const hits = filtered.reduce((n, c) => n + c.pages.length, 0)
+
+  // The marks follow the query, and are cleared with it. The index exists by
+  // the time a query does: both are set from the same keystroke.
+  useEffect(() => {
+    highlightMatches(index, needle)
+    return () => highlightMatches(null, '')
+  }, [index, needle])
+
   const close = useCallback(() => setOpen(false), [])
 
   return (
