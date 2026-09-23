@@ -448,10 +448,25 @@ async function main() {
     return slug
   })
 
-  console.log(`${chapters.length} chapters, ${sections.length} pages:`)
+  // A chapter is only worth creating if something lands in it. "Övrigt" holds
+  // nothing but the hand-written change log in this document, and that is on
+  // SKIP_SLUGS — so importing the chapter anyway left an empty heading that
+  // renders nowhere (the site drops chapters with no pages) while still filling
+  // a row in the admin and a line in every page's chapter picker.
+  const usedChapters = new Set(
+    sections.filter((_, i) => !SKIP_SLUGS.has(pageSlugs[i])).map((s) => s.chapterIndex),
+  )
+  const emptyChapters = chapters.filter((_, i) => !usedChapters.has(i))
+
+  console.log(`${usedChapters.size} chapters, ${sections.length} pages:`)
   for (const [i, s] of sections.entries()) {
     console.log(
       `  [${chapters[s.chapterIndex].slug}] ${String(s.order).padStart(3)}  ${pageSlugs[i]}`,
+    )
+  }
+  if (emptyChapters.length > 0) {
+    console.log(
+      `chapters skipped (no pages of their own): ${emptyChapters.map((c) => c.slug).join(', ')}`,
     )
   }
   if (dryRun) return
@@ -464,7 +479,12 @@ async function main() {
   })
 
   const chapterIds: number[] = []
-  for (const c of chapters) {
+  for (const [chapterIndex, c] of chapters.entries()) {
+    if (!usedChapters.has(chapterIndex)) {
+      // Nothing references it, so the id is never read.
+      chapterIds.push(-1)
+      continue
+    }
     const existing = await payload.find({
       collection: 'info-chapter',
       where: { slug: { equals: c.slug } },

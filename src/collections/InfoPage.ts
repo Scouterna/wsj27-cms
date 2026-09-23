@@ -12,6 +12,16 @@ export const InfoPage: CollectionConfig = {
     singular: 'Handbok',
     plural: 'Handbok',
   },
+  // The handbook's own order, not the order pages happened to be written in.
+  // Without this the list opens newest-first, which after an import means the
+  // pages it created last, backwards, with chapter one somewhere on page three.
+  // `chapter.order` and not `chapter`: sorting on the relationship sorts by its
+  // id, which matches the document today only because the import created the
+  // chapters in order — a chapter inserted into a later Word version would take
+  // the next free id and sort last. Payload does read the related field
+  // (checked: `sort=chapter.name` returns them alphabetically), and a page with
+  // no chapter still appears, at the end.
+  defaultSort: ['chapter.order', 'order'],
   access: {
     read: () => true,
     create: isEditor,
@@ -20,7 +30,14 @@ export const InfoPage: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'chapter', 'order', 'audience'],
+    defaultColumns: ['chapter', 'order', 'title', 'updatedAt'],
+    // 42 pages today, so the whole handbook is one screen and no chapter is
+    // split across a page break in the list.
+    pagination: { defaultLimit: 50 },
+    // Payload marks this beta in 3.83 ("may change in future releases"); it
+    // adds the group-by control to the list view, which is the same structure
+    // the sort above gives, made explicit.
+    groupBy: true,
   },
   versions: {
     drafts: true,

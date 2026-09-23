@@ -24,6 +24,13 @@ Handbok; the API paths, the database tables and `src/payload-types.ts` keep
 migration and invalidates every stored reference — so the display name is what
 follows the content's name, and the slug stays put.
 
+**The admin list opens in the handbook's own order**, chapter by chapter, and
+shows the whole handbook on one screen. Without that it opens newest-first,
+which right after an import means the pages it just created, backwards. The
+sort is on `chapter.order` rather than `chapter`, because sorting on a
+relationship sorts by its id — which matches the document only for as long as
+no chapter is ever inserted in the middle of a later Word version.
+
 Pages are indexed by `@payloadcms/plugin-search` into a `search` collection.
 Every locale is flattened into one non-localized `searchText` field; see
 [src/search/beforeSync.ts](src/search/beforeSync.ts) for why a localized index

@@ -13,8 +13,9 @@
  * The file:
  *
  *   {
- *     "notes":  { "<page slug>": "One sentence to the readers." },
- *     "delete": ["<page slug>"]
+ *     "notes":          { "<page slug>": "One sentence to the readers." },
+ *     "delete":         ["<page slug>"],
+ *     "deleteChapters": ["<chapter slug>"]
  *   }
  *
  * An empty note string clears the note, which is how a page leaves "Senaste
@@ -31,6 +32,8 @@ import config from '../src/payload.config'
 interface Edits {
   notes?: Record<string, string>
   delete?: string[]
+  /** Chapter slugs to remove. A chapter with pages is refused, not cascaded. */
+  deleteChapters?: string[]
 }
 
 async function main() {
@@ -45,6 +48,7 @@ async function main() {
   const edits = JSON.parse(readFileSync(path, 'utf8')) as Edits
   const notes = Object.entries(edits.notes ?? {})
   const doomed = edits.delete ?? []
+  const doomedChapters = edits.deleteChapters ?? []
 
   const payload = await getPayload({ config: await config })
 
@@ -72,7 +76,41 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(`${notes.length} note(s), ${doomed.length} deletion(s)${dryRun ? '  [dry run]' : ''}`)
+  // A chapter still holding pages is a mistake, not an instruction: deleting it
+  // would leave its pages orphaned and invisible on /handbok, which renders
+  // only what it can place in a chapter.
+  const chapterIds = new Map<string, number>()
+  for (const slug of doomedChapters) {
+    const chapter = (
+      await payload.find({
+        collection: 'info-chapter',
+        where: { slug: { equals: slug } },
+        limit: 1,
+        locale: 'sv',
+      })
+    ).docs[0]
+    if (!chapter) {
+      console.error(`unknown chapter slug: ${slug} — nothing written`)
+      process.exit(1)
+    }
+    const pages = await payload.count({
+      collection: 'info-page',
+      where: { chapter: { equals: chapter.id } },
+    })
+    if (pages.totalDocs > 0) {
+      console.error(`chapter ${slug} still holds ${pages.totalDocs} page(s) — nothing written`)
+      process.exit(1)
+    }
+    chapterIds.set(slug, chapter.id)
+  }
+
+  console.log(
+    `${notes.length} note(s), ${doomed.length} deletion(s), ` +
+      `${doomedChapters.length} chapter deletion(s)${dryRun ? '  [dry run]' : ''}`,
+  )
+  for (const slug of doomedChapters) {
+    console.log(`  DELETE chapter ${slug}`)
+  }
   for (const [slug, note] of notes) {
     console.log(`  note   ${slug}: ${note === '' ? '(cleared)' : note}`)
   }
@@ -93,8 +131,14 @@ async function main() {
   for (const slug of doomed) {
     await payload.delete({ collection: 'info-page', id: ids.get(slug)! })
   }
+  for (const slug of doomedChapters) {
+    await payload.delete({ collection: 'info-chapter', id: chapterIds.get(slug)! })
+  }
 
-  console.log(`done: ${notes.length} note(s) written, ${doomed.length} page(s) deleted`)
+  console.log(
+    `done: ${notes.length} note(s) written, ${doomed.length} page(s) and ` +
+      `${doomedChapters.length} chapter(s) deleted`,
+  )
 }
 
 main()
