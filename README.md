@@ -47,6 +47,7 @@ and empty by default locally.
 | `/api`, `/api/graphql` | Payload's REST and GraphQL APIs                       |
 | `/api/app-config`      | The WSJ27 app shell's navigation entry                |
 | `/handbok`             | The whole handbook as one public page                 |
+| `/handbok/utskrift`    | The same handbook, laid out to be printed             |
 | `/`, `/my-route`       | Unchanged leftovers from the Payload starter template |
 
 `/api/app-config` returns 401 to anyone without a CMS role, and that is what
@@ -59,8 +60,9 @@ queries on a page with this little traffic.
 `https://campfire.wsj27.scouterna.net/_services/handbok`** — a sibling of the
 base path, not a child of it, and so the one address in this repo that the
 table above cannot express. [src/middleware.ts](src/middleware.ts) rewrites
-that single path onto `/_services/cms/handbok`; the file explains why neither
-traefik nor `next.config` can do it instead. Two things follow:
+that prefix — the whole subtree, so the printable version comes with it — onto
+`/_services/cms/handbok`; the file explains why neither traefik nor
+`next.config` can do it instead. Three things follow:
 
 - **`/_services/cms` has to stay routed** for the short URL to render at all.
   The page is served from the short path but its JS, CSS and fonts are
@@ -69,6 +71,11 @@ traefik nor `next.config` can do it instead. Two things follow:
   has them. Routing `/_services/handbok` without the middleware in the image is
   a 404, and shipping the middleware without the ingress path never gets a
   request.
+- **The handbook's own links follow the address the reader used.** Both
+  addresses answer, and `next/link` only knows the base-path one, so a
+  hard-coded link would move a reader off the short URL on their first click.
+  The middleware reports the prefix it matched in a request header
+  (`src/handbok-prefix.ts`) and `handbookLinks()` builds from it.
 
 ## Telling readers what changed
 
@@ -98,6 +105,34 @@ The list needs no limit: a page holds one note at a time, so it can never be
 longer than the handbook has pages, and editors prune it by clearing fields.
 Only pages that belong to a chapter can appear, because a standalone page has
 no anchor on `/handbok` to link to.
+
+## Reading the handbook
+
+`/handbok` is one long document, so the two questions a reader has constantly —
+where am I, and where is the bit about X — are answered in the same place: a
+sidebar that is a permanent column on a wide screen and a drawer behind the
+hamburger on a narrow one.
+
+**Search reads the rendered DOM rather than an index sent with the page.** The
+page already contains every word of the handbook, and Bilaga 1 alone is 48 000
+characters, so shipping a second copy to search would roughly double a document
+that is already long. Reading the DOM also cannot drift: what is searchable is
+exactly what is on the page. The index is built on the first keystroke, from an
+event handler — not on mount in an effect, which the React compiler rejects as
+a cascading render, and not in a ref, which may not be read while rendering.
+
+**The printer icon leads to `/handbok/utskrift`, a separate route.** The two
+want different documents: the reading view is navigated and searched and leads
+with what changed, while the printable one is read front to back and needs its
+table of contents on paper, a page break per chapter, and none of the chrome.
+Typography is shared through `handbok.css` so the printed handbook cannot drift
+from the one on screen — only the furniture differs. The print stylesheet spells
+out link URLs after their text, because paper has no hover and the handbook is
+full of links.
+
+Nothing prints itself on load. A page that opens the print dialog on arrival
+gives the reader no chance to see what they are about to spend forty sheets of
+paper on.
 
 ## How it fits the WSJ27 platform
 

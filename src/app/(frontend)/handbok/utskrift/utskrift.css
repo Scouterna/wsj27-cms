@@ -1,0 +1,131 @@
+/* The printable handbook. Typography comes from handbok.css — this file is
+ * only the page furniture that paper needs and the screen does not, plus the
+ * one control the screen needs and paper must never show. */
+
+@page {
+  margin: 18mm 16mm;
+}
+
+.utskrift-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 0;
+}
+
+.utskrift-toolbar a {
+  color: var(--wsj-dark);
+}
+
+.utskrift-print {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--wsj-base);
+  color: #fff;
+  cursor: pointer;
+}
+
+.utskrift-print:hover,
+.utskrift-print:focus-visible {
+  background: var(--wsj-dark);
+}
+
+.utskrift-printed {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.utskrift-toc {
+  margin: 0 0 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--wsj-base);
+  border-radius: 12px;
+}
+
+.utskrift-toc h2,
+.utskrift-changes h2 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  color: var(--wsj-base);
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+}
+
+.utskrift-toc-chapter {
+  margin: 0.9rem 0 0.15rem;
+  font-weight: 700;
+}
+
+.utskrift-toc ul,
+.utskrift-changes ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.utskrift-toc li {
+  margin: 0.1rem 0;
+}
+
+.utskrift-changes {
+  margin: 0 0 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 2px solid var(--wsj-light);
+  border-radius: 12px;
+}
+
+.utskrift-changes li {
+  margin: 0.35rem 0;
+}
+
+@media print {
+  /* The only thing on this page that cannot survive a printer. */
+  .utskrift-toolbar {
+    display: none;
+  }
+
+  /* The contents belongs on its own leaf, and every chapter starts a page —
+   * the chapter rule is inherited from handbok.css. */
+  .utskrift-toc {
+    break-after: page;
+    border: none;
+    padding: 0;
+  }
+
+  .utskrift-changes {
+    border: none;
+    padding: 0;
+  }
+
+  /* A heading stranded at the foot of a page, or a single line carried to the
+   * next one, is the usual way a long printed document turns ugly. */
+  .handbok h2,
+  .handbok h3,
+  .handbok h4 {
+    break-after: avoid;
+  }
+
+  .handbok article {
+    break-inside: auto;
+  }
+
+  .handbok p,
+  .handbok li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Paper has no hover, so a bare underline says nothing about where a link
+   * goes. The handbook is full of them. */
+  .handbok .chapter a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+}

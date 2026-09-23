@@ -59,6 +59,13 @@ Three habits that keep it true:
   the cost is a string compare per request. The same paragraph explains why the
   rewrite cannot live in traefik (no rights to create a `Middleware` CRD) or in
   `next.config` (Next refuses an internal destination under `basePath: false`).
+  It rewrites the whole `/_services/handbok` prefix rather than one path, so
+  the printable version comes with it, and reports the prefix it matched in a
+  request header so the handbook's own links stay on the address the reader
+  used. That constant lives in `src/handbok-prefix.ts` as its own module: the
+  middleware is a separate bundle, so importing it from a page would drag
+  `getPayload` into the middleware and importing it the other way would drag
+  the middleware into every page.
 - **Migrations run at boot in production** (`prodMigrations`). Dev uses push
   mode, so a schema change can work locally while missing its migration —
   always `pnpm payload migrate:create` after changing collections.

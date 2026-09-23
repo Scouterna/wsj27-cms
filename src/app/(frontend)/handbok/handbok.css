@@ -118,107 +118,223 @@
   text-decoration-thickness: 2px;
 }
 
-/* Table of contents: the dark contrast as a flat plate, tone-on-tone with the
- * chapter plates. */
-.handbok .toc {
-  margin: 0 0 1rem;
-  padding: 1.25rem 1.5rem;
-  background: var(--wsj-dark);
-  color: #fff;
-  border-radius: 12px;
+/* ── Layout ────────────────────────────────────────────────────────────────
+ *
+ * One long document, so the two things a reader needs constantly are "where am
+ * I" and "where is the bit about X". Both live in the sidebar: a permanent
+ * column once there is room for one, and a drawer behind the hamburger when
+ * there is not. The content column keeps its own measure either way — a
+ * handbook read at full window width is a handbook nobody finishes. */
+
+.handbok {
+  --handbok-sidebar: 19rem;
+  --handbok-topbar: 3.25rem;
 }
 
-.handbok .toc a {
+.handbok-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--wsj-dark);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  z-index: 60;
+  border-radius: 0 0 8px 0;
+}
+
+.handbok-skip:focus {
+  left: 0;
+}
+
+.handbok-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: var(--handbok-topbar);
+  padding: 0 0.5rem;
+  background: var(--wsj-base);
+  color: #fff;
+}
+
+.handbok-topbar-title {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  flex: 1;
+}
+
+.handbok-iconbutton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.handbok-iconbutton:hover,
+.handbok-iconbutton:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.handbok-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(29, 29, 31, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.handbok-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.handbok-sidebar {
+  position: fixed;
+  top: var(--handbok-topbar);
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  width: min(var(--handbok-sidebar), 86vw);
+  padding: 1rem 1rem 3rem;
+  background: var(--wsj-dark);
+  color: #fff;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: translateX(-102%);
+  transition: transform 0.18s ease;
+}
+
+.handbok-sidebar.is-open {
+  transform: translateX(0);
+}
+
+.handbok-search label {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.handbok-search input {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.5rem 0.65rem;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--wsj-ink);
+}
+
+.handbok-search input:focus-visible {
+  outline: none;
+  border-color: var(--wsj-light);
+}
+
+.handbok-search-count {
+  margin: 0.35rem 0 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.handbok-navlist {
+  margin-top: 0.75rem;
+}
+
+.handbok-navchapter > a {
+  display: block;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  margin-top: 1rem;
   color: #fff;
   text-decoration: none;
 }
 
-.handbok .toc a:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--wsj-light);
-  text-decoration-thickness: 2px;
-}
-
-.handbok .toc-chapter > a {
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-}
-
-.handbok .toc ul {
-  margin: 0.25rem 0 1rem;
-  padding-left: 1.25rem;
-  list-style: none;
-}
-
-.handbok .toc li {
-  margin: 0.15rem 0;
-}
-
-.handbok .toc-chapter:last-child ul {
-  margin-bottom: 0;
-}
-
-/* Change log: a white card with a flat base-colour rule, not a third filled
- * plate. The header and the chapters are already solid base, the contents is
- * solid dark, and a fourth block of colour would stop any of them meaning
- * anything. */
-.handbok .changelog {
-  margin: 0 0 1rem;
-  padding: 1.25rem 1.5rem;
-  border: 2px solid var(--wsj-base);
-  border-radius: 12px;
-}
-
-.handbok .changelog h2 {
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  font-size: 1.35rem;
-  color: var(--wsj-base);
-  margin: 0 0 0.75rem;
-}
-
-.handbok .changelog ol {
-  margin: 0;
+.handbok-navlist ul {
+  margin: 0.25rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.handbok .changelog li + li {
-  margin-top: 0.9rem;
-  border-top: 1px solid var(--wsj-light);
-  padding-top: 0.9rem;
+.handbok-navlist li a {
+  display: block;
+  padding: 0.28rem 0.5rem;
+  margin-left: -0.5rem;
+  border-radius: 6px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.95rem;
 }
 
-.handbok .changelog-meta {
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.6rem;
-  align-items: baseline;
+.handbok-navlist a:hover,
+.handbok-navlist a:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
 }
 
-.handbok .changelog-meta time {
+/* Where you are, not where you have been: set from an IntersectionObserver in
+ * HandbokNav, because :target only survives until the next scroll. */
+.handbok-navlist li a[aria-current='location'] {
+  background: var(--wsj-light);
   font-weight: 700;
-  font-size: 0.85rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--wsj-dark);
-  white-space: nowrap;
 }
 
-.handbok .changelog-note {
-  margin: 0.15rem 0 0;
+.handbok-noresult {
+  margin-top: 1rem;
+  opacity: 0.85;
 }
 
-/* Per page: quiet by design. It is on every page, so it has to stay out of the
- * way of the text it dates. */
-.handbok .updated {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--wsj-dark);
+.handbok-main {
+  padding-top: 0.5rem;
+}
+
+/* Anchors must clear the sticky bar, or a jump lands with the heading hidden
+ * behind it and the reader starts mid-sentence. */
+.handbok .chapter,
+.handbok article {
+  scroll-margin-top: calc(var(--handbok-topbar) + 0.75rem);
+}
+
+@media (min-width: 64rem) {
+  .handbok-topbar {
+    padding-left: calc(var(--handbok-sidebar) + 1rem);
+  }
+
+  .handbok-burger,
+  .handbok-backdrop {
+    display: none;
+  }
+
+  .handbok-sidebar {
+    top: 0;
+    height: 100vh;
+    transform: none;
+    transition: none;
+    padding-top: 1.25rem;
+  }
+
+  .handbok-main {
+    margin-left: var(--handbok-sidebar);
+  }
 }
 
 .handbok table {
@@ -251,9 +367,24 @@ article {
   scroll-margin-top: 1rem;
 }
 
+/* The reading measure. Long lines are the single biggest thing standing
+ * between a reader and the end of a chapter. */
+.handbok .chapter article > p,
+.handbok .chapter article > ul,
+.handbok .chapter article > ol {
+  max-width: 38rem;
+}
+
 @media print {
-  .handbok .toc {
+  .handbok-topbar,
+  .handbok-sidebar,
+  .handbok-backdrop,
+  .handbok-skip {
     display: none;
+  }
+
+  .handbok-main {
+    margin-left: 0;
   }
   .handbok .chapter > h1 {
     break-before: page;

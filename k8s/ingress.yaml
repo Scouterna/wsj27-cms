@@ -6,10 +6,11 @@
 #
 # /_services/handbok is the handbook's public address. It is a sibling of the
 # base path, not a child, so the app cannot serve it by routing alone —
-# src/middleware.ts rewrites it onto /_services/cms/handbok, and that file
-# explains why the rewrite has no other home. Both paths are needed: the page
-# is served from the short one but loads its JS, CSS and fonts from under the
-# base path.
+# src/middleware.ts rewrites the whole prefix onto /_services/cms/handbok, and
+# that file explains why the rewrite has no other home. The prefix rule below
+# therefore also covers /_services/handbok/utskrift. Both paths are needed: the
+# page is served from the short one but loads its JS, CSS and fonts from under
+# the base path.
 #
 # No cert-manager annotations either, on purpose: the `testapp` Ingress owns
 # the certificate for campfire.wsj27.scouterna.net and cert-manager writes it
