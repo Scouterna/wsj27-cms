@@ -203,6 +203,10 @@ export interface InfoPage {
    */
   order?: number | null;
   /**
+   * Räknas ut ur kapitlets och sidans ordning. Sorterar listan.
+   */
+  position?: number | null;
+  /**
    * Campfire-sidor visas inte på den publika handboken.
    */
   audience: 'publik' | 'campfire';
@@ -430,6 +434,7 @@ export interface InfoPageSelect<T extends boolean = true> {
   slug?: T;
   chapter?: T;
   order?: T;
+  position?: T;
   audience?: T;
   changeNote?: T;
   changeNoteAt?: T;

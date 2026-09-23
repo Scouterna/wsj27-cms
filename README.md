@@ -36,10 +36,23 @@ belong in this collection.
 
 **The admin list opens in the handbook's own order**, chapter by chapter, and
 shows the whole handbook on one screen. Without that it opens newest-first,
-which right after an import means the pages it just created, backwards. The
-sort is on `chapter.order` rather than `chapter`, because sorting on a
-relationship sorts by its id — which matches the document only for as long as
-no chapter is ever inserted in the middle of a later Word version.
+which right after an import means the pages it just created, backwards.
+
+That takes a field of its own. `Bokordning` (`position`) is chapter order ×
+1000 + page order, kept in step by
+[src/fields/position.ts](src/fields/position.ts) and by an afterChange hook on
+the chapter. It exists because **the admin list sorts on one column** and
+`order` restarts at zero in every chapter, so nothing the handbook already had
+could express book order — and `defaultSort` cannot stand in, because the list
+view reads that option only when it is a string. An array of two fields is
+accepted by the REST API and silently ignored by the admin.
+
+Two things follow. A sort the editor has clicked **wins over the default**:
+Payload stores it per user and per collection, so clicking the Bokordning
+column is what puts it back. And moving a chapter rewrites its pages' positions
+with one SQL statement rather than through `payload.update`, because both that
+and `payload.db.updateOne` stamp `updatedAt` — which is reader-facing on
+/handbok, where it would claim every page in the chapter changed today.
 
 Pages are indexed by `@payloadcms/plugin-search` into a `search` collection.
 Every locale is flattened into one non-localized `searchText` field; see
