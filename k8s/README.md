@@ -110,6 +110,13 @@ deploy a `sha-` tag; CI pushes one per commit.
 - **The base path is baked into the image.** Changing the serving path means
   changing the `NEXT_BASE_PATH` build-arg in the app repo's CI and rebuilding,
   not just editing the ingress. The ingress deliberately has no strip-prefix.
+- **The handbook's short path and the base path ship together.**
+  `/_services/handbok` is served by a rewrite in the image
+  (`src/middleware.ts`), so the ingress path and the image are two halves of
+  one change: apply the ingress before the image is deployed and the path 404s;
+  deploy the image without the ingress path and nothing reaches it. Roll the
+  image first, then apply — that order is only briefly wrong. And keep
+  `/_services/cms` routed: the page's assets are base-path-prefixed.
 - **Traefik does not cap request body size by default**, so media uploads work
   without a middleware. j26 capped it at 50 MiB as protection; if that is
   wanted here it is a `Middleware` CRD, which the wsj27 kubeconfig currently

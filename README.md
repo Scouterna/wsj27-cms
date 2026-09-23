@@ -55,6 +55,21 @@ what it gets. `/handbok` is `force-dynamic`: it reads the database on every
 request, because a stale static copy of an edited handbook is worse than a few
 queries on a page with this little traffic.
 
+**The handbook's public address is
+`https://campfire.wsj27.scouterna.net/_services/handbok`** — a sibling of the
+base path, not a child of it, and so the one address in this repo that the
+table above cannot express. [src/middleware.ts](src/middleware.ts) rewrites
+that single path onto `/_services/cms/handbok`; the file explains why neither
+traefik nor `next.config` can do it instead. Two things follow:
+
+- **`/_services/cms` has to stay routed** for the short URL to render at all.
+  The page is served from the short path but its JS, CSS and fonts are
+  base-path-prefixed, so they come from the long one.
+- **The ingress needs both paths**, and [k8s/ingress.yaml](k8s/ingress.yaml)
+  has them. Routing `/_services/handbok` without the middleware in the image is
+  a 404, and shipping the middleware without the ingress path never gets a
+  request.
+
 ## How it fits the WSJ27 platform
 
 - Served at **`https://campfire.wsj27.scouterna.net/_services/cms`** — the same
@@ -88,6 +103,11 @@ In development the postgres adapter runs in push mode, so schema changes apply
 to the dev database automatically. Logging in locally requires a valid
 wsj27-auth cookie, which is set on the campfire host — API endpoints, `/handbok`
 and the other public pages work without one.
+
+`NEXT_BASE_PATH` is empty by default locally, which puts everything at the root
+and leaves the middleware inert. Set it to `/_services/cms` in `.env` to get
+production's paths — that is the only way to exercise `/_services/handbok`
+before deploying.
 
 ## Tests and checks
 

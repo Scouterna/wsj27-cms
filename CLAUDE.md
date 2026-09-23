@@ -50,6 +50,15 @@ Three habits that keep it true:
 - **`NEXT_BASE_PATH` is baked at image build time** (Next.js basePath). The
   production image is built with `/_services/cms`; changing the serving path
   means rebuilding the image, not just editing the ingress.
+- **Never give `src/middleware.ts` a `config.matcher`.** It exists to serve the
+  handbook at `/_services/handbok`, which is *outside* basePath, and a matcher
+  is basePath-relative — Next prefixes it, so any matcher written there names a
+  path under `/_services/cms` and the middleware stops running for the one path
+  it exists for. The failure is a plain 404 with nothing in the logs; it was
+  measured, not reasoned about. The `if` in the file is the gate instead, and
+  the cost is a string compare per request. The same paragraph explains why the
+  rewrite cannot live in traefik (no rights to create a `Middleware` CRD) or in
+  `next.config` (Next refuses an internal destination under `basePath: false`).
 - **Migrations run at boot in production** (`prodMigrations`). Dev uses push
   mode, so a schema change can work locally while missing its migration —
   always `pnpm payload migrate:create` after changing collections.
