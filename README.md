@@ -144,7 +144,11 @@ paper on.
   [wsj27-auth-api](https://github.com/Scouterna/wsj27-auth-api): the CMS
   verifies the `wsj27-auth_access-token` cookie against the auth service's
   JWKS (discovered via `AUTH_DISCOVERY_URL`) and provisions a local mirror
-  user just-in-time. There is no email/password form.
+  user just-in-time. There is no email/password form. **A wrong
+  `AUTH_DISCOVERY_URL` looks exactly like everyone being logged out**: the host
+  answers 200 with the SPA's index.html for any unclaimed path, so the CMS
+  parses HTML as JSON, throws, and treats every request as anonymous. Check the
+  content type, not the status code.
 - **Access requires a CMS role in the token**: `wsj27-cms:admin` or
   `wsj27-cms:editor` from wsj27-project-api's role map — and CMT membership
   (any `wsj27:cmt…` project role) counts as editor without a dedicated grant.

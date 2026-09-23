@@ -7,4 +7,9 @@ data:
   # session is host-scoped cookies; the /_services/cms base path is baked into
   # the image at build time (NEXT_BASE_PATH build-arg in the app repo's CI).
   SERVER_URL: "https://campfire.wsj27.scouterna.net/_services/cms"
-  AUTH_DISCOVERY_URL: "https://campfire.wsj27.scouterna.net/auth/.well-known/openid-configuration"
+  # wsj27-auth moved from /auth to /api/auth when the campfire platform was
+  # redeployed on 2026-09-22, and nothing told the CMS. The old path still
+  # answers 200 — with the SPA's index.html — so getJwksConfig parsed HTML as
+  # JSON, threw, and every visitor was treated as logged out. A 200 here is no
+  # sign the value is right; check the content type.
+  AUTH_DISCOVERY_URL: "https://campfire.wsj27.scouterna.net/api/auth/.well-known/openid-configuration"

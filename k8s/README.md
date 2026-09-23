@@ -88,7 +88,9 @@ deploy a `sha-` tag; CI pushes one per commit.
    curl -s -o /dev/null -w '%{http_code}\n' https://campfire.wsj27.scouterna.net/_services/cms
    ```
 
-6. **Give someone access.** Login is SSO-only via wsj27-auth-api. CMT members
+6. **Give someone access.** Login is SSO-only via wsj27-auth-api, which serves
+   OIDC discovery at `/api/auth/.well-known/openid-configuration` — see the
+   comment in `configmap.yaml` before changing that value. CMT members
    (any `wsj27:cmt…` project role) get editor access out of the box; everyone
    else needs a `wsj27-cms:editor` grant in wsj27-project-api's role map, and
    admin (user management) always requires an explicit `wsj27-cms:admin`.
@@ -102,11 +104,28 @@ deploy a `sha-` tag; CI pushes one per commit.
   A deploy therefore has a few seconds of downtime. If the CMS ever needs
   more replicas, media storage has to move to blob storage
   (`@payloadcms/storage-azure`) first.
-- **The TLS secret belongs to `testapp`.** The `testapp` Ingress carries the
-  cert-manager annotations for campfire.wsj27.scouterna.net; this ingress (like
-  wsj27-auth-api's) only references `testapp-tls`. If testapp is ever removed,
-  the annotations — and the ownership of the certificate — must move to one of
-  the surviving ingresses on the host.
+- **The TLS certificate has no owner, and that is now a live problem.** The
+  `testapp` Ingress used to carry the cert-manager annotations for
+  campfire.wsj27.scouterna.net while every sibling merely referenced
+  `testapp-tls`. **testapp is gone** (observed 2026-09-23), and with it the
+  `Certificate` resource cert-manager had created from those annotations —
+  ingress-shim owns it, so deleting the Ingress garbage-collects it. What is
+  left is a secret holding a certificate valid until **2026-11-27** that
+  nothing will renew. `wsj27-cms` and `demo-handbok` both still reference it.
+
+  Whoever fixes this moves the annotations onto a surviving ingress on the
+  host:
+
+  ```yaml
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    acme.cert-manager.io/http01-ingress-class: traefik
+  ```
+
+  Check the HTTP-01 challenge can actually be served first: `/` on this host is
+  answered by Caddy, not by traefik, so `/.well-known/acme-challenge/` has to
+  reach the temporary ingress cert-manager creates or the order never
+  completes.
 - **The base path is baked into the image.** Changing the serving path means
   changing the `NEXT_BASE_PATH` build-arg in the app repo's CI and rebuilding,
   not just editing the ingress. The ingress deliberately has no strip-prefix.
