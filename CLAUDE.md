@@ -72,6 +72,18 @@ Three habits that keep it true:
   `20260922_232632_add_change_note` is the first appended one and is what a new
   migration should look like: additive `ALTER TABLE ... ADD COLUMN`, with a
   `down` that drops exactly those columns.
+- **A page whose text passes 40 000 characters used to vanish on save.**
+  `searchText` flattens every locale of a page into one field, and Payload
+  validates text fields against `defaultMaxTextLength` (40 000). The search
+  plugin syncs from the page's own `afterChange`, so the rejected `search`
+  document rolled back the transaction that wrote the page: `payload.create`
+  returned a document with an id, the plugin logged "Error syncing search
+  document", and the page was simply not there. An import reported success and
+  silently lost the handbook's Bilaga 1, which flattens to 48 207 characters.
+  `SEARCH_TEXT_MAX` in `src/search/beforeSync.ts` raises the limit and
+  truncates at it, and `payload.config.ts` states the same number on the field.
+  Keep the two together, and do not assume a returned document means a written
+  row.
 - **Check the statement order of generated migrations that drop tables.** The
   generator has emitted `DROP TABLE ... CASCADE` before the `DROP CONSTRAINT`
   statements for FKs referencing that table — the cascade takes the constraint

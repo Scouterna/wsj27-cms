@@ -17,6 +17,26 @@ type AllLocales = {
  * `searchText` blob, so one save keeps the whole index correct and a query matches
  * regardless of which language the reader is using.
  */
+/**
+ * Upper bound for the flattened index, and the reason it is stated rather than
+ * left to the default.
+ *
+ * Payload validates every text field against `defaultMaxTextLength` (40 000).
+ * `searchText` holds every locale of a page at once, so it passes that mark
+ * long before a page looks unusual — the handbook's Bilaga 1 flattens to
+ * 48 207 characters. What happens then is the dangerous part: this hook runs
+ * in the page's own `afterChange`, so the failed `search` document rolls back
+ * the transaction that created the page. `payload.create` still returns a
+ * document with an id, the plugin logs "Error syncing search document", and
+ * the page is simply not there. An import reports success and silently loses a
+ * page.
+ *
+ * So the limit is raised to somewhere no real page reaches, and the text is
+ * truncated at it. A page that somehow exceeds even this loses the tail of its
+ * searchable text, which is a bad day; losing the page is a worse one.
+ */
+export const SEARCH_TEXT_MAX = 500_000
+
 export const beforeSync: BeforeSync = async ({
   collectionSlug,
   originalDoc,
@@ -67,6 +87,6 @@ export const beforeSync: BeforeSync = async ({
     ...searchDoc,
     title: (defaultLocale ? allLocales.title?.[defaultLocale] : undefined) || searchDoc.title,
     // Collapse whitespace so line breaks in rich text don't split words apart for `like` queries.
-    searchText: parts.join(' ').replace(/\s+/g, ' ').trim(),
+    searchText: parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, SEARCH_TEXT_MAX),
   }
 }

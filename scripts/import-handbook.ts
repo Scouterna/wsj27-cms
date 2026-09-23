@@ -35,6 +35,41 @@ import config from '../src/payload.config'
 import { editorFeatures } from '../src/lib/editorFeatures'
 import { slugify } from '../src/fields/slug'
 
+/**
+ * Sections the document carries but the CMS must not: the handbook keeps its
+ * own hand-written change log, and /handbok renders one from `changeNote`.
+ * Importing both would put two answers to the same question on one page, and
+ * the hand-written one goes stale the moment an editor fixes something without
+ * touching Word. Slugs, because that is what an upsert matches on.
+ *
+ * Deleting these pages is not enough on its own — they are still in the
+ * document, so the next import would create them again.
+ */
+const SKIP_SLUGS = new Set(['andringslogg', 'tidigare-andringslogg'])
+
+/**
+ * Canonical JSON for comparing two lexical trees: object keys in a fixed
+ * order, and node `id`s dropped.
+ *
+ * Both are needed, and both were measured rather than guessed. Payload stores
+ * lexical with its own key order, so a plain `JSON.stringify` reported all 28
+ * pages as changed when they were identical — same length, first difference at
+ * index 10, `type` before `children` instead of after. With keys sorted, 7
+ * pages still differed: every one of them contains a link, and
+ * `convertHTMLToLexical` mints a fresh ObjectId for each link node on every
+ * run. That id says nothing about the content.
+ */
+const stable = (value: unknown): string =>
+  JSON.stringify(value, (_key, val) =>
+    val && typeof val === 'object' && !Array.isArray(val)
+      ? Object.fromEntries(
+          Object.entries(val as Record<string, unknown>)
+            .filter(([k]) => k !== 'id')
+            .sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : val,
+  )
+
 interface Section {
   chapterIndex: number
   title: string
@@ -57,11 +92,16 @@ function chapterName(raw: string): string {
   return trimmed
 }
 
-function parseHandbook(html: string): { chapters: Chapter[]; sections: Section[] } {
+function parseHandbook(html: string): {
+  chapters: Chapter[]
+  sections: Section[]
+  droppedImages: number
+} {
   const dom = new JSDOM(html)
   const chapters: Chapter[] = []
   const sections: Section[] = []
   let current: Section | null = null
+  let droppedImages = 0
 
   for (const el of Array.from(dom.window.document.body.children)) {
     const tag = el.tagName.toLowerCase()
@@ -99,10 +139,20 @@ function parseHandbook(html: string): { chapters: Chapter[]; sections: Section[]
       current = { chapterIndex: chapters.length - 1, title: chapter.name, html: '', order: 0 }
       sections.push(current)
     }
+    // Word's images arrive as `<img src="media/image4.png">` — a reference to a
+    // file pandoc only writes with --extract-media, and nothing here uploads to
+    // the Media collection. Left in, the converter builds an `upload` node that
+    // points at no document, and Payload rejects the whole page: "upload node
+    // failed to validate: This field is not a valid upload ID". Dropping them
+    // is a real loss, so the count is reported rather than swallowed.
+    for (const img of Array.from(el.querySelectorAll('img'))) {
+      droppedImages++
+      img.remove()
+    }
     current.html += el.outerHTML
   }
 
-  return { chapters, sections: sections.filter((s) => s.html.trim() !== '') }
+  return { chapters, sections: sections.filter((s) => s.html.trim() !== ''), droppedImages }
 }
 
 async function main() {
@@ -114,7 +164,10 @@ async function main() {
     process.exit(2)
   }
 
-  const { chapters, sections } = parseHandbook(readFileSync(htmlPath, 'utf8'))
+  const { chapters, sections, droppedImages } = parseHandbook(readFileSync(htmlPath, 'utf8'))
+  if (droppedImages > 0) {
+    console.log(`note: ${droppedImages} image(s) dropped — see parseHandbook`)
+  }
 
   // Deterministic page slugs, chapter-prefixed on collision.
   const seen = new Set<string>()
@@ -161,7 +214,13 @@ async function main() {
 
   let created = 0
   let updated = 0
+  let unchanged = 0
+  let skipped = 0
   for (const [i, s] of sections.entries()) {
+    if (SKIP_SLUGS.has(pageSlugs[i])) {
+      skipped++
+      continue
+    }
     const content = convertHTMLToLexical({ editorConfig, html: s.html, JSDOM })
     const data = {
       title: s.title,
@@ -176,11 +235,32 @@ async function main() {
       collection: 'info-page',
       where: { slug: { equals: pageSlugs[i] } },
       limit: 1,
+      locale: 'sv',
+      depth: 0,
+      draft: false,
     })
     if (existing.docs[0]) {
+      const doc = existing.docs[0]
+      // Write only what actually differs. An unconditional update moves
+      // `updatedAt` on every page, and that date is reader-facing on /handbok —
+      // a re-import would tell every reader that all thirty pages changed
+      // today. It would also burn a version per page against the 100-per-
+      // document cap, pushing real edits out of the history.
+      const same =
+        doc.title === data.title &&
+        doc.slug === data.slug &&
+        doc.order === data.order &&
+        doc.audience === data.audience &&
+        doc._status === 'published' &&
+        doc.chapter === data.chapter &&
+        stable(doc.content) === stable(data.content)
+      if (same) {
+        unchanged++
+        continue
+      }
       await payload.update({
         collection: 'info-page',
-        id: existing.docs[0].id,
+        id: doc.id,
         data,
         locale: 'sv',
         draft: false,
@@ -192,8 +272,23 @@ async function main() {
     }
   }
 
+  // Pages the CMS holds that this document no longer contains. The import
+  // never deletes — a slug can vanish because a heading was renamed, and
+  // deleting on that guess would take a page's version history with it. But
+  // left unsaid they linger on /handbok stating things the handbook has
+  // stopped saying, so they are named here and removed by a human who checked.
+  const orphans = (
+    await payload.find({ collection: 'info-page', limit: 500, depth: 0, pagination: false })
+  ).docs
+    .map((d) => d.slug)
+    .filter((slug) => !pageSlugs.includes(slug))
+  if (orphans.length > 0) {
+    console.log(`orphans (in the CMS, not in this document): ${orphans.join(', ')}`)
+  }
+
   console.log(
-    `done: ${chapters.length} chapters upserted, ${created} pages created, ${updated} updated`,
+    `done: ${chapters.length} chapters upserted, ${created} pages created, ` +
+      `${updated} updated, ${unchanged} unchanged, ${skipped} skipped`,
   )
 }
 

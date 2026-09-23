@@ -71,3 +71,7 @@ node_modules/
 /playwright/.cache/
 
 .wsj27*
+
+# Källdokument för handboksimporten (scripts/import-handbook.ts). Stora
+# binärer som inte hör hemma i ett publikt repo — innehållet lever i CMS:et.
+docs/

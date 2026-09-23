@@ -14,7 +14,7 @@ import { sv } from 'payload/i18n/sv'
 import { InfoPage } from './collections/InfoPage'
 import { InfoChapters } from './collections/InfoChapters'
 import { editorFeatures } from './lib/editorFeatures'
-import { beforeSync } from './search/beforeSync'
+import { beforeSync, SEARCH_TEXT_MAX } from './search/beforeSync'
 import { isEditor } from './access'
 
 const filename = fileURLToPath(import.meta.url)
@@ -70,6 +70,9 @@ export default buildConfig({
           {
             name: 'searchText',
             type: 'textarea',
+            // Explicit, because the default is 40 000 and a single page can
+            // flatten past it — see SEARCH_TEXT_MAX for what that costs.
+            maxLength: SEARCH_TEXT_MAX,
             admin: {
               readOnly: true,
             },

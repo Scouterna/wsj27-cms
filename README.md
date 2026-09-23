@@ -195,6 +195,36 @@ NODE_ENV=production DATABASE_URL=... PAYLOAD_SECRET=... \
 `NODE_ENV=production` is load-bearing: it keeps the postgres adapter off dev
 push mode, so the script can never alter the schema it writes into.
 
+The import writes content and nothing else. It **skips pages whose content,
+title, order and chapter are all unchanged**, because `updatedAt` is
+reader-facing on /handbok — an unconditional re-import would tell every reader
+that all thirty pages changed today. It **never deletes**, and prints the pages
+the CMS holds that the document no longer contains so a human can decide. It
+**drops images** and says how many: Word's `<img>` has no upload behind it, and
+left in it fails the whole page.
+
+What it deliberately does not do is decide what readers should be told. That is
+[scripts/apply-handbook-edits.ts](scripts/apply-handbook-edits.ts), driven by a
+file you read first:
+
+```bash
+NODE_ENV=production DATABASE_URL=... PAYLOAD_SECRET=... \
+  pnpm exec tsx scripts/apply-handbook-edits.ts docs/edits.json [--dry-run]
+```
+
+```json
+{
+  "notes": { "packlista": "Såsskålen är struken." },
+  "delete": ["gammal-sida"]
+}
+```
+
+Nothing is written until every slug in the file has been found, because a typo
+looks exactly like a renamed page and a half-applied run is worse than none.
+
+The source documents live in `docs/`, which is gitignored — the handbook is
+large, binary, and its content belongs in the CMS rather than in a public repo.
+
 ## Building and deploying
 
 Every push builds `ghcr.io/scouterna/wsj27-cms` via
