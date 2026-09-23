@@ -37,6 +37,9 @@ export default buildConfig({
     },
     components: {
       beforeLogin: ['/components/BeforeLogin#BeforeLogin'],
+      // Wraps the whole admin, so the session-refresh loop runs wherever the
+      // editor is — see the component for why the CMS needs to run it at all.
+      providers: ['/components/SessionRefresh#SessionRefresh'],
     },
   },
   cors: {

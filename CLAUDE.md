@@ -66,6 +66,15 @@ Three habits that keep it true:
   middleware is a separate bundle, so importing it from a page would drag
   `getPayload` into the middleware and importing it the other way would drag
   the middleware into every page.
+- **The access token lives five minutes, and nothing refreshes it by itself.**
+  `ACCESS_TOKEN_TTL_SECONDS` is 300 in wsj27-auth-api. The service ships a
+  browser loop at `<auth>/static/refresh.js` that reads the public
+  `wsj27-auth_expires-at` cookie and calls `/refresh` a minute before expiry,
+  and its README tells consumer apps to embed it. The CMS did not, so an editor
+  was signed out after five minutes of writing, with nothing to explain it —
+  the strategy just finds an expired token and reports no user. It is embedded
+  now as an admin *provider* (`src/components/SessionRefresh.tsx`), not in
+  `src/app/(payload)/layout.tsx`, which Payload generates and may rewrite.
 - **Migrations run at boot in production** (`prodMigrations`). Dev uses push
   mode, so a schema change can work locally while missing its migration —
   always `pnpm payload migrate:create` after changing collections.

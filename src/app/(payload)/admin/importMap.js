@@ -26,6 +26,7 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { BeforeLogin as BeforeLogin_01d809f8b80f9b2f728eaaa8a4fcc420 } from '../../../components/BeforeLogin'
+import { SessionRefresh as SessionRefresh_e79c7e6036812c1dad098642d24d6c9a } from '../../../components/SessionRefresh'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -58,5 +59,6 @@ export const importMap = {
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "/components/BeforeLogin#BeforeLogin": BeforeLogin_01d809f8b80f9b2f728eaaa8a4fcc420,
+  "/components/SessionRefresh#SessionRefresh": SessionRefresh_e79c7e6036812c1dad098642d24d6c9a,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }
