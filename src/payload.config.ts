@@ -16,6 +16,7 @@ import { InfoChapters } from './collections/InfoChapters'
 import { editorFeatures } from './lib/editorFeatures'
 import { beforeSync, SEARCH_TEXT_MAX } from './search/beforeSync'
 import { isEditor } from './access'
+import { icons } from './icons'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,6 +33,12 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     theme: 'light',
+    // Payload builds the admin panel's <head> from here rather than from
+    // Next's file conventions, so the frontend's icons do not reach it — the
+    // two halves have to be told separately, from the one source in src/icons.
+    meta: {
+      icons,
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },

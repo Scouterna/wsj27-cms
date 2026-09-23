@@ -196,6 +196,59 @@ five. `logoSrc()` builds its URL for the same reason `fontFaces()` does: a
 plain `src` is not base-path-prefixed, and the handbook answers on two
 prefixes.
 
+**The browser-tab icon is declared once**, in [src/icons.ts](src/icons.ts), and
+read from both halves of the app: the frontend's `metadata` export and
+`admin.meta` in `payload.config.ts`. Payload builds the admin panel's `<head>`
+itself, so Next's `app/favicon.ico` file convention never reaches it — declare
+it only the Next way and the admin quietly keeps the default icon, which is the
+sort of thing nobody looks at a CMS tab and notices.
+
+The artwork is the contingent logotype reduced to what survives 16 px: its own
+brush plate, with "27" cut out of the wordmark's own "2027" so the digits keep
+the logotype's face. The guide asks for the complete logotype wherever it can
+be used, and this is a place it cannot — four words across sixteen pixels is a
+smudge. The World Scout emblem inside the mark would have scaled, but it
+belongs to the movement rather than to this contingent, and a favicon is
+exactly where that distinction stops being visible.
+
+The source image is in the contingent's graphic package and not in this
+repository, so the recipe is here instead. Note that the package's file is
+painted `#EEAF00` while the guide specifies `#EEAD05`: one is knocked out, the
+other filled in. `-strip` is what makes it reproducible — without it every run
+writes a new timestamp and no two outputs compare equal.
+
+```bash
+S=WSJ27SE_stripes_YELLOW.png
+
+# The brush plate: every opaque pixel of the logotype, filled flat.
+convert "$S" \( +clone -alpha extract -threshold 50% \) -alpha off \
+  -compose copy_opacity -composite -fill '#EEAD05' -colorize 100 \
+  -trim +repage plate.png
+
+# "27", cut out of the wordmark's own "2027" so it keeps the logotype's face.
+convert "$S" -crop 134x123+1755+697 +repage \
+  -fuzz 35% -transparent '#EEAF00' -trim +repage d27.png
+
+for s in "16 8" "32 17" "48 25"; do set -- $s
+  convert plate.png -filter Catrom -resize ${1}x -background none \
+    -gravity center -extent ${1}x${1} \
+    \( d27.png -filter Catrom -resize x${2} \) -gravity center -composite \
+    -strip f-$1.png
+done
+convert f-16.png f-32.png f-48.png -strip public/favicon.ico
+
+convert plate.png -filter Catrom -resize 160x -background white \
+  -gravity center -extent 180x180 \
+  \( d27.png -filter Catrom -resize x82 \) -gravity center -composite \
+  -alpha remove -strip public/apple-touch-icon.png
+```
+
+The three `.ico` frames are drawn at their own sizes rather than scaled down
+from one, and each keeps the plate's ragged edge, which is the element the
+profile says recurs everywhere. The Apple icon is the exception that gets a
+white ground: iOS composites a transparent tile onto black, and the plate
+would have arrived framed in it.
+
 ## How it fits the WSJ27 platform
 
 - Served at **`https://campfire.wsj27.scouterna.net/_services/cms`** — the same
