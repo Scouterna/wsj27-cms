@@ -8,9 +8,10 @@ import { formatSlug } from '../fields/slug'
 // new chapter in the admin UI, not a deploy.
 export const InfoChapters: CollectionConfig = {
   slug: 'info-chapter',
+  // One string, not a per-language record — see InfoPage.
   labels: {
-    singular: { sv: 'Kapitel', en: 'Chapter' },
-    plural: { sv: 'Kapitel', en: 'Chapters' },
+    singular: 'Handbok kapitel',
+    plural: 'Handbok kapitel',
   },
   access: {
     read: () => true,

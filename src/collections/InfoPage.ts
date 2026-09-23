@@ -4,6 +4,13 @@ import { formatSlug } from '../fields/slug'
 
 export const InfoPage: CollectionConfig = {
   slug: 'info-page',
+  // Handbook content is Swedish only, so the labels are one string rather than
+  // a per-admin-language record: an editor running the admin in English sees
+  // the same name as the collection's content carries.
+  labels: {
+    singular: 'Handbok',
+    plural: 'Handbok',
+  },
   access: {
     read: () => true,
     create: isEditor,
