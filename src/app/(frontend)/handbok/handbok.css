@@ -337,6 +337,76 @@
   }
 }
 
+/* ── Change log and page dates ─────────────────────────────────────────────
+ *
+ * These rules were once deleted by accident, together with the table of
+ * contents block they happened to sit next to, and nothing failed — CSS for
+ * markup that no longer exists is silent, and so is markup whose CSS no longer
+ * exists. The page simply went ugly, in production, until someone looked. If
+ * this section moves, check what moves with it.
+ *
+ * A white card with a flat rule rather than a third filled plate: the header
+ * and the chapter titles are already solid base, the sidebar is solid dark, and
+ * a fourth block of colour would stop any of them meaning anything. */
+.handbok .changelog {
+  margin: 0 0 1.5rem;
+  padding: 1.1rem 1.35rem;
+  border: 2px solid var(--wsj-base);
+  border-radius: 12px;
+}
+
+.handbok .changelog h2 {
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-size: 1.3rem;
+  color: var(--wsj-base);
+  margin: 0 0 0.6rem;
+}
+
+/* The date is a heading over the day's notes, not a label repeated on every
+ * row. An import writes every note it carries in the same second, so the
+ * ungrouped list printed the same date ten times down the left. */
+.handbok .changelog-day + .changelog-day {
+  margin-top: 1.1rem;
+}
+
+.handbok .changelog-day h3 {
+  margin: 0 0 0.35rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--wsj-light);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--wsj-dark);
+}
+
+.handbok .changelog ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.handbok .changelog li {
+  margin: 0.3rem 0;
+  line-height: 1.5;
+}
+
+.handbok .changelog li a {
+  font-weight: 700;
+}
+
+.handbok .changelog-note {
+  /* Deliberately not dimmed: it is the sentence the reader came for. */
+  color: inherit;
+}
+
+/* Under every page heading, so it has to stay out of the way of the text it
+ * dates. */
+.handbok .updated {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--wsj-dark);
+}
+
 .handbok table {
   border-collapse: collapse;
   width: 100%;

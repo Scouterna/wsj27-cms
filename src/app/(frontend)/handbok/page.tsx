@@ -19,7 +19,7 @@ export const metadata = {
 const CONTENT_ID = 'handbok-content'
 
 export default async function HandbokPage() {
-  const { chapters, announced } = await loadHandbook()
+  const { chapters, changes } = await loadHandbook()
   const links = await handbookLinks()
 
   return (
@@ -47,22 +47,25 @@ export default async function HandbokPage() {
             <h1>Handboken</h1>
           </header>
 
-          {announced.length > 0 && (
+          {changes.length > 0 && (
             <section aria-labelledby="senaste-andringarna" className="changelog">
               <h2 id="senaste-andringarna">Senaste ändringarna</h2>
-              <ol>
-                {announced.map((page) => (
-                  <li key={page.id}>
-                    <p className="changelog-meta">
-                      {page.changeNoteAt && (
-                        <time dateTime={page.changeNoteAt}>{formatDate(page.changeNoteAt)}</time>
-                      )}
-                      <a href={`#${page.slug}`}>{page.title}</a>
-                    </p>
-                    <p className="changelog-note">{page.changeNote}</p>
-                  </li>
-                ))}
-              </ol>
+              {changes.map((day) => (
+                <div key={day.key} className="changelog-day">
+                  <h3>
+                    <time dateTime={day.key}>{day.label}</time>
+                  </h3>
+                  <ul>
+                    {day.pages.map((page) => (
+                      <li key={page.id}>
+                        <a href={`#${page.slug}`}>{page.title}</a>
+                        {' — '}
+                        <span className="changelog-note">{page.changeNote}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </section>
           )}
 

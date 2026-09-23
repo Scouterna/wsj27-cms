@@ -27,12 +27,12 @@ export const metadata = {
  * the one on screen — only the chrome and the page furniture differ.
  */
 export default async function UtskriftPage() {
-  const { chapters, announced } = await loadHandbook()
+  const { chapters, changes } = await loadHandbook()
   const links = await handbookLinks()
   const printedAt = formatDate(new Date().toISOString())
 
   return (
-    <div className="handbok utskrift">
+    <div className="handbok">
       <style>{fontFaces(process.env.NEXT_PUBLIC_BASE_PATH || '')}</style>
 
       <div className="utskrift-toolbar">
@@ -61,17 +61,21 @@ export default async function UtskriftPage() {
           ))}
         </nav>
 
-        {announced.length > 0 && (
+        {changes.length > 0 && (
           <section aria-labelledby="utskrift-andringar" className="utskrift-changes">
             <h2 id="utskrift-andringar">Senaste ändringarna</h2>
-            <ul>
-              {announced.map((page) => (
-                <li key={page.id}>
-                  <strong>{page.title}</strong>
-                  {page.changeNoteAt && <> ({formatDate(page.changeNoteAt)})</>} — {page.changeNote}
-                </li>
-              ))}
-            </ul>
+            {changes.map((day) => (
+              <div key={day.key}>
+                <h3>{day.label}</h3>
+                <ul>
+                  {day.pages.map((page) => (
+                    <li key={page.id}>
+                      <strong>{page.title}</strong> — {page.changeNote}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </section>
         )}
 

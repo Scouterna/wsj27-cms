@@ -12,10 +12,19 @@ export interface HandbookChapter {
   pages: InfoPage[]
 }
 
+/** The notes written on one day, in the order the pages appear in the handbook. */
+export interface ChangeDay {
+  /** Sortable day key, also the `datetime` attribute. */
+  key: string
+  /** The same day written out for a reader. */
+  label: string
+  pages: InfoPage[]
+}
+
 export interface Handbook {
   chapters: HandbookChapter[]
-  /** Pages carrying a reader-facing note, newest note first. */
-  announced: InfoPage[]
+  /** Reader-facing notes grouped by the day they were written, newest first. */
+  changes: ChangeDay[]
 }
 
 /**
@@ -61,14 +70,46 @@ export async function loadHandbook(): Promise<Handbook> {
   // The list needs no limit. A page holds one note at a time, so it can never
   // be longer than the handbook has pages, and an entry leaves it when an
   // editor clears the field.
-  const announced = pages.docs
-    .filter((page) => {
-      const chapterId = typeof page.chapter === 'object' ? page.chapter?.id : page.chapter
-      return chapterId != null && byChapter.has(chapterId) && page.changeNote?.trim()
-    })
-    .sort((a, b) => (b.changeNoteAt ?? '').localeCompare(a.changeNoteAt ?? ''))
+  const announced = pages.docs.filter((page) => {
+    const chapterId = typeof page.chapter === 'object' ? page.chapter?.id : page.chapter
+    return chapterId != null && byChapter.has(chapterId) && page.changeNote?.trim()
+  })
 
-  return { chapters: grouped.filter((c) => c.pages.length > 0), announced }
+  const withPages = grouped.filter((c) => c.pages.length > 0)
+
+  // Where each page sits in the handbook, so the notes for one day can be read
+  // in the order the reader will meet them.
+  const position = new Map<number, number>()
+  for (const chapter of withPages) {
+    for (const page of chapter.pages) position.set(page.id, position.size)
+  }
+
+  // Grouped by day, because an import writes every note it carries within the
+  // same second: ungrouped, the same date is repeated once per entry down the
+  // left of the list, and the timestamps are then too close together to order
+  // anything meaningfully. The day is the unit a reader thinks in anyway.
+  const dayKey = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+
+  const byDay = new Map<string, InfoPage[]>()
+  for (const page of announced) {
+    const key = page.changeNoteAt ? dayKey.format(new Date(page.changeNoteAt)) : ''
+    byDay.set(key, [...(byDay.get(key) ?? []), page])
+  }
+
+  const changes = Array.from(byDay.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, group]) => ({
+      key,
+      label: formatDate(group[0].changeNoteAt) ?? key,
+      pages: [...group].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0)),
+    }))
+
+  return { chapters: withPages, changes }
 }
 
 /**
