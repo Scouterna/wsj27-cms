@@ -77,8 +77,9 @@ deploy a `sha-` tag; CI pushes one per commit.
      --from-file=TeeFranklin-Bold.woff2
    ```
 
-   The file names are load-bearing — the @font-face declarations in
-   `src/app/(frontend)/handbok/page.tsx` reference them verbatim.
+   The file names are load-bearing — the @font-face declarations built by
+   `fontFaces()` in `src/app/(frontend)/handbok/handbok-data.ts` reference them
+   verbatim.
 
 5. **Apply** (command at the top), then watch:
 

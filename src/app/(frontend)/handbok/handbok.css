@@ -1,27 +1,55 @@
 /* WSJ27SE graphic profile ("WSJ27SE_form version 8"), applied to the handbook.
  *
- * The official color family — base #CE4A17, darker contrast #9A3616, lighter
- * contrast #E66B45 — used tone-on-tone: the guide reserves it for the
- * contingent's official material, which a leader handbook is. Flat design
- * throughout: hierarchy through color plates and contrast, no shadows or
- * gradients.
+ * The yellow primary — grundfärg #F4C126 with its two 15% contrast tones,
+ * #EEAD05 darker and #F9D578 lighter — used tone-on-tone, which is what the
+ * guide asks for when several colors meet. Flat design throughout: hierarchy
+ * through color plates and contrast, no shadows or gradients.
  *
- * Typography per the guide: headings in Bravely Script, ALWAYS uppercase,
- * white on a base-color plate or base-color on white; body text in Lieberath
- * Grotesque Normal with Bold for subheadings, and Heavy for headings where
- * Bravely reads too playful. The fonts ship in the contingent's graphic
- * package and are not committed here — @font-face lives in page.tsx (it needs
- * the runtime base path); until the files land in public/fonts/ the fallback
- * stacks below apply.
+ * It is a deliberate move off the official color. The guide files the rust
+ * #CE4A17 under "officiell färg" and yellow under "primära färger", the
+ * contingent's less formal register, and the page was dressed in rust for that
+ * reason until 2026-09-23. Yellow is the register it is in now; if it ever goes
+ * back, the paragraph below is the part that has to go back with it.
+ *
+ * **Yellow is a background color here, and never a foreground one.** This is
+ * not a preference, it is the measurement: white on #F4C126 is 1.7:1 and
+ * #EEAD05 as text on white is 2.0:1, both far under the 4.5:1 a reader needs.
+ * The guide's own rule — "om texten skrivs på någon av grundfärgerna sätts den
+ * i vitt" — was written where the rust it reserves for official material makes
+ * 4.6:1, and it does not survive the move to yellow. Two roles carry what the
+ * rust family used to carry alone, and keeping them straight is what stops the
+ * next color swap from repeating this:
+ *
+ *   --wsj-on-base  the near-black that sits *on* a yellow plate (10:1). The
+ *                  guide sanctions it directly: "rubriker sätts i svart eller
+ *                  någon av våra grundfärger".
+ *   --wsj-deep     the brown from the guide's "utökad färgskala", which exists
+ *                  to complement the other families, for everything that has
+ *                  to read *on white* — headings, links, dates, the sidebar
+ *                  ground (9.6:1). --wsj-deep-soft is its lighter grundfärg,
+ *                  for rules rather than text (5.6:1).
+ *
+ * Typography per the guide: headings in Bravely Script, ALWAYS uppercase; body
+ * text in Lieberath Grotesque Normal with Bold for subheadings, and Heavy for
+ * headings where Bravely reads too playful. The fonts ship in the contingent's
+ * graphic package and are not committed here — @font-face is built in
+ * handbok-data.ts (it needs the runtime base path); until the files land in
+ * public/fonts/ the fallback stacks below apply.
  *
  * Scoped under .handbok — the template's global styles.css paints the rest of
  * the frontend black, so this page brings its own ground. */
 
 .handbok {
-  --wsj-base: #ce4a17;
-  --wsj-dark: #9a3616;
-  --wsj-light: #e66b45;
+  --wsj-base: #f4c126;
+  --wsj-dark: #eead05;
+  --wsj-light: #f9d578;
   --wsj-ink: #1d1d1f;
+  /* Text on any of the three yellows. Never #fff — see the note at the top. */
+  --wsj-on-base: #1d1d1f;
+  /* The dark the yellow family does not have, borrowed from the guide's
+   * "utökad färgskala": #643C13 for text on white, #975A15 for a rule. */
+  --wsj-deep: #643c13;
+  --wsj-deep-soft: #975a15;
   --font-heading: 'Bravely Script', 'Lieberath Grotesque', system-ui, sans-serif;
   --font-body: 'Lieberath Grotesque', system-ui, sans-serif;
 
@@ -43,7 +71,7 @@
 /* Header: a flat plate in the base color, wordmark-style. */
 .handbok header {
   background: var(--wsj-base);
-  color: #fff;
+  color: var(--wsj-on-base);
   border-radius: 12px;
   padding: 2rem 1.5rem;
   margin-bottom: 1.5rem;
@@ -61,7 +89,23 @@
   margin: 0.25rem 0 0;
   border: none;
   padding: 0;
-  color: #fff;
+  color: var(--wsj-on-base);
+}
+
+/* The contingent logotype, on the title plate. The mark exists in one colour
+ * per palette family and is used on that family's own grundfärg, or on white
+ * or black — so the yellow cut, whose shape is #EEAD05 with a white wordmark,
+ * belongs on #F4C126 and reads there as the tone-on-tone the guide shows it in.
+ * A cut from another family on this plate would not be a sanctioned pairing.
+ *
+ * It keeps working when the plate goes away: @media print drops the background,
+ * and white is the other ground the mark is allowed on. */
+.handbok .handbok-logo {
+  display: block;
+  width: 13rem;
+  max-width: 62%;
+  height: auto;
+  margin: 0 0 1.25rem;
 }
 
 /* Bravely Script is uppercase-only by rule. */
@@ -78,7 +122,7 @@
  * profile uses "penseldrag" plates instead of shadows. */
 .handbok .chapter > h1 {
   background: var(--wsj-base);
-  color: #fff;
+  color: var(--wsj-on-base);
   border-radius: 12px;
   padding: 0.75rem 1.25rem;
   margin-top: 4rem;
@@ -92,7 +136,7 @@
   font-weight: 700;
   font-size: 1.45rem;
   line-height: 1.25;
-  color: var(--wsj-dark);
+  color: var(--wsj-deep);
   margin: 2.5rem 0 0.5rem;
 }
 
@@ -112,9 +156,11 @@
   font-weight: 700;
 }
 
+/* The underline is the theme colour, the text is not: yellow cannot be read
+ * as type on white, but it is exactly right as a highlighter under one. */
 .handbok a {
-  color: var(--wsj-dark);
-  text-decoration-color: var(--wsj-light);
+  color: var(--wsj-deep);
+  text-decoration-color: var(--wsj-base);
   text-decoration-thickness: 2px;
 }
 
@@ -135,7 +181,7 @@
   position: absolute;
   left: -9999px;
   top: 0;
-  background: var(--wsj-dark);
+  background: var(--wsj-deep);
   color: #fff;
   padding: 0.6rem 1rem;
   z-index: 60;
@@ -156,7 +202,7 @@
   height: var(--handbok-topbar);
   padding: 0 0.5rem;
   background: var(--wsj-base);
-  color: #fff;
+  color: var(--wsj-on-base);
 }
 
 .handbok-topbar-title {
@@ -182,9 +228,11 @@
   text-decoration: none;
 }
 
+/* A dark wash, not a white one: these two buttons sit on the yellow bar, and
+ * white on yellow is the change nobody sees. */
 .handbok-iconbutton:hover,
 .handbok-iconbutton:focus-visible {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(29, 29, 31, 0.14);
 }
 
 .handbok-backdrop {
@@ -210,7 +258,9 @@
   z-index: 50;
   width: min(var(--handbok-sidebar), 86vw);
   padding: 1rem 1rem 3rem;
-  background: var(--wsj-dark);
+  /* The one full-height block on the page, so it has to be the dark ground the
+   * white content sits against — a job no tone of yellow can do. */
+  background: var(--wsj-deep);
   color: #fff;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -255,20 +305,22 @@
  * `HIGHLIGHT_NAME` in handbok-search.ts — the one string this file and that
  * one have to agree on.
  *
- * Amber is off the profile's palette on purpose: its three colors are already
- * the plates and the headings here, so a hit painted in one of them would read
- * as more of the layout, and a mark has one job. Written out rather than taken
- * from a custom property because a highlight pseudo-element inherits through a
- * chain of its own — whether it can see the properties set on .handbok is up
- * to the browser, and an unresolved var() is a transparent plate, which is a
- * mark nobody can see.
+ * The pale blue is off the profile's palette on purpose: its colors are
+ * already the plates and the headings here, so a hit painted in one of them
+ * would read as more of the layout, and a mark has one job. It was an amber
+ * while the theme was rust — under a yellow theme that is the one hue it
+ * cannot be, which is why it sits on the other side of the wheel now. Written
+ * out rather than taken from a custom property because a highlight
+ * pseudo-element inherits through a chain of its own — whether it can see the
+ * properties set on .handbok is up to the browser, and an unresolved var() is
+ * a transparent plate, which is a mark nobody can see.
  *
  * No `color`: unset leaves each hit in the color it already had, so a bold
- * subheading stays the profile's dark red on the amber instead of being
- * flattened to body ink. ::highlight() takes colors and text decoration only —
- * no padding, no radius — so the plate is the background and nothing more. */
+ * subheading stays the profile's brown on the blue instead of being flattened
+ * to body ink. ::highlight() takes colors and text decoration only — no
+ * padding, no radius — so the plate is the background and nothing more. */
 .handbok ::highlight(handbok-traff) {
-  background-color: #ffd166;
+  background-color: #9ce0f0;
 }
 
 .handbok-search-count {
@@ -319,6 +371,7 @@
  * HandbokNav, because :target only survives until the next scroll. */
 .handbok-navlist li a[aria-current='location'] {
   background: var(--wsj-light);
+  color: var(--wsj-on-base);
   font-weight: 700;
 }
 
@@ -383,7 +436,7 @@
   font-family: var(--font-heading);
   text-transform: uppercase;
   font-size: 1.3rem;
-  color: var(--wsj-base);
+  color: var(--wsj-deep);
   margin: 0 0 0.6rem;
 }
 
@@ -397,10 +450,10 @@
 .handbok .changelog-day h3 {
   margin: 0 0 0.35rem;
   padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--wsj-light);
+  border-bottom: 1px solid var(--wsj-deep-soft);
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--wsj-dark);
+  color: var(--wsj-deep);
 }
 
 .handbok .changelog ul {
@@ -428,7 +481,7 @@
 .handbok .updated {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
-  color: var(--wsj-dark);
+  color: var(--wsj-deep);
 }
 
 /* Imported pictures. Word's are sized for an A4 page — the one in Bilaga 1 is
@@ -449,9 +502,12 @@
   font-size: 0.95em;
 }
 
+/* The grid is a rule, not decoration — a reader follows a row across it — so
+ * it takes the brown rather than a tone of yellow, which on white is not a
+ * line anyone can see. */
 .handbok th,
 .handbok td {
-  border: 1px solid var(--wsj-light);
+  border: 1px solid var(--wsj-deep-soft);
   padding: 0.4rem 0.6rem;
   text-align: left;
   vertical-align: top;
@@ -459,7 +515,7 @@
 
 .handbok th {
   background: var(--wsj-base);
-  color: #fff;
+  color: var(--wsj-on-base);
   font-weight: 700;
 }
 
@@ -491,18 +547,21 @@ article {
   .handbok-main {
     margin-left: 0;
   }
+  /* The plates drop away on paper and the titles become type on white, so
+   * they take the brown here — a yellow chapter title would print as a
+   * smudge, and this is the one place nobody is watching when it does. */
   .handbok .chapter > h1 {
     break-before: page;
     background: none;
-    color: var(--wsj-base);
+    color: var(--wsj-deep);
     padding: 0;
   }
   .handbok header {
     background: none;
-    color: var(--wsj-base);
+    color: var(--wsj-deep);
     padding: 0;
   }
   .handbok header h1 {
-    color: var(--wsj-base);
+    color: var(--wsj-deep);
   }
 }

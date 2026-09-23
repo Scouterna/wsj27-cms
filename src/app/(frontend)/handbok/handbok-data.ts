@@ -170,6 +170,18 @@ export const fontFaces = (basePath: string) =>
     .join('\n')
 
 /**
+ * The contingent logotype, the same mark the Word handbook carries on its
+ * cover. It sits in public/, so it has the fonts' problem and is solved the
+ * same way: Next prefixes the base path onto its own routes but not onto a
+ * plain `src`, and the handbook is read under two prefixes, so a hard-coded
+ * path is a picture that loads on one address and 404s on the other.
+ */
+export const logoSrc = (basePath: string) => `${basePath}/wsj27-swedish-contingent.png`
+
+/** What the mark says, for a reader who cannot see it. */
+export const LOGO_ALT = 'Swedish Contingent — 26th World Scout Jamboree Poland 2027'
+
+/**
  * The handbook's own links, built for the address the reader actually used.
  *
  * The handbook answers on two paths — /_services/handbok and the base path's

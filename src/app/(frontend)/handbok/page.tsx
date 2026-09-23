@@ -2,7 +2,14 @@ import React from 'react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
-import { fontFaces, formatDate, handbookLinks, loadHandbook } from './handbok-data'
+import {
+  fontFaces,
+  formatDate,
+  handbookLinks,
+  loadHandbook,
+  LOGO_ALT,
+  logoSrc,
+} from './handbok-data'
 import { HandbokNav } from './HandbokNav'
 import './handbok.css'
 
@@ -22,9 +29,11 @@ export default async function HandbokPage() {
   const { chapters, changes } = await loadHandbook()
   const links = await handbookLinks()
 
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
   return (
     <div className="handbok">
-      <style>{fontFaces(process.env.NEXT_PUBLIC_BASE_PATH || '')}</style>
+      <style>{fontFaces(basePath)}</style>
 
       <a className="handbok-skip" href={`#${CONTENT_ID}`}>
         Hoppa till innehållet
@@ -43,6 +52,17 @@ export default async function HandbokPage() {
       <main className="handbok-main" id={CONTENT_ID}>
         <div className="handbok-inner">
           <header>
+            {/* eslint-disable-next-line @next/next/no-img-element -- a fixed
+                brand asset at its final size; next/image would only add a
+                round trip through the optimizer, which localPatterns does not
+                allow for public/ anyway. */}
+            <img
+              className="handbok-logo"
+              src={logoSrc(basePath)}
+              alt={LOGO_ALT}
+              width={880}
+              height={699}
+            />
             <p className="kicker">WSJ27</p>
             <h1>Handboken</h1>
           </header>

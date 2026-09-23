@@ -166,6 +166,36 @@ Nothing prints itself on load. A page that opens the print dialog on arrival
 gives the reader no chance to see what they are about to spend forty sheets of
 paper on.
 
+## The graphic profile on the page
+
+Both views are dressed in the WSJ27SE graphic profile by
+[handbok.css](<src/app/(frontend)/handbok/handbok.css>), whose own header says
+which colour family is in use and what each role is for. The values live there
+and nowhere else; what follows is only what you need to know _before_ changing
+one.
+
+**The profile's rule that text on a base colour is set in white was written for
+the rust family, and does not survive being pointed at another one.** The page
+runs on the yellow primary, where white on the plate measures 1.7:1 and the
+darker yellow as text on white measures 2.0:1 — both unreadable. So two roles
+carry what the rust family carried by itself: `--wsj-on-base`, the near-black
+that sits _on_ a yellow plate, and `--wsj-deep`, the brown from the guide's
+"utökad färgskala", for everything that has to read _on white_ — headings,
+links, dates, table rules, the sidebar ground. Swapping the three yellows for
+another family is the easy half; those two roles are the half that decides
+whether the page can still be read, and the print stylesheet is where it goes
+unnoticed, because nobody is watching the paper.
+
+**The contingent logotype opens both covers**, from
+`public/wsj27-swedish-contingent.png`. The mark exists in one colour per
+palette family and is used on that family's own grundfärg, or on white or
+black — so the file there is the yellow cut, and it sits on the yellow title
+plate. **Change the theme colour and that file changes with it**, or the cover
+becomes the one pairing the profile does not allow; the graphic package has all
+five. `logoSrc()` builds its URL for the same reason `fontFaces()` does: a
+plain `src` is not base-path-prefixed, and the handbook answers on two
+prefixes.
+
 ## How it fits the WSJ27 platform
 
 - Served at **`https://campfire.wsj27.scouterna.net/_services/cms`** — the same

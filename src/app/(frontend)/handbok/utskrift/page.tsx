@@ -2,7 +2,14 @@ import React from 'react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical'
 
-import { fontFaces, formatDate, handbookLinks, loadHandbook } from '../handbok-data'
+import {
+  fontFaces,
+  formatDate,
+  handbookLinks,
+  loadHandbook,
+  LOGO_ALT,
+  logoSrc,
+} from '../handbok-data'
 import { PrintButton } from './PrintButton'
 import '../handbok.css'
 import './utskrift.css'
@@ -31,9 +38,11 @@ export default async function UtskriftPage() {
   const links = await handbookLinks()
   const printedAt = formatDate(new Date().toISOString())
 
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+
   return (
     <div className="handbok">
-      <style>{fontFaces(process.env.NEXT_PUBLIC_BASE_PATH || '')}</style>
+      <style>{fontFaces(basePath)}</style>
 
       <div className="utskrift-toolbar">
         <a href={links.root}>← Tillbaka till handboken</a>
@@ -42,6 +51,17 @@ export default async function UtskriftPage() {
 
       <div className="handbok-inner">
         <header>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a fixed
+              brand asset at its final size; next/image would only add a round
+              trip through the optimizer, which localPatterns does not allow
+              for public/ anyway. */}
+          <img
+            className="handbok-logo"
+            src={logoSrc(basePath)}
+            alt={LOGO_ALT}
+            width={880}
+            height={699}
+          />
           <p className="kicker">WSJ27</p>
           <h1>Handboken</h1>
           <p className="utskrift-printed">Utskriven {printedAt}</p>

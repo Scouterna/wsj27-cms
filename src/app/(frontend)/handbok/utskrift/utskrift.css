@@ -17,7 +17,7 @@
 }
 
 .utskrift-toolbar a {
-  color: var(--wsj-dark);
+  color: var(--wsj-deep);
 }
 
 .utskrift-print {
@@ -27,7 +27,7 @@
   border: 0;
   border-radius: 8px;
   background: var(--wsj-base);
-  color: #fff;
+  color: var(--wsj-on-base);
   cursor: pointer;
 }
 
@@ -53,7 +53,7 @@
 .utskrift-changes h2 {
   font-family: var(--font-heading);
   text-transform: uppercase;
-  color: var(--wsj-base);
+  color: var(--wsj-deep);
   margin: 0 0 0.75rem;
   font-size: 1.35rem;
 }
@@ -73,10 +73,14 @@
   margin: 0.1rem 0;
 }
 
+/* The same rule as the contents card, where it used to be the lighter tone:
+ * #F9D578 on white is 1.1:1, which is not a border, it is a rumour. The two
+ * cards are told apart by their headings, and on paper both rules are dropped
+ * anyway. */
 .utskrift-changes {
   margin: 0 0 1.5rem;
   padding: 1.25rem 1.5rem;
-  border: 2px solid var(--wsj-light);
+  border: 2px solid var(--wsj-base);
   border-radius: 12px;
 }
 
