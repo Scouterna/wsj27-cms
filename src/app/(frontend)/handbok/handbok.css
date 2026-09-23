@@ -23,11 +23,13 @@
  *   --wsj-on-base  the near-black that sits *on* a yellow plate (10:1). The
  *                  guide sanctions it directly: "rubriker sätts i svart eller
  *                  någon av våra grundfärger".
- *   --wsj-deep     the brown from the guide's "utökad färgskala", which exists
- *                  to complement the other families, for everything that has
- *                  to read *on white* — headings, links, dates, the sidebar
- *                  ground (9.6:1). --wsj-deep-soft is its lighter grundfärg,
- *                  for rules rather than text (5.6:1).
+ *   --wsj-deep     the blue-green that stands beside the yellow under "primära
+ *                  färger", for everything that has to read *on white* —
+ *                  headings, links, dates, the sidebar ground (8.7:1). It
+ *                  replaced a brown borrowed from the "utökad färgskala" on
+ *                  2026-09-23: the guide pairs these two families itself, and
+ *                  a page in the primary register should not have to reach
+ *                  into the extended scale for its own dark.
  *
  * Typography per the guide: headings in Bravely Script, ALWAYS uppercase; body
  * text in Lieberath Grotesque Normal with Bold for subheadings, and Heavy for
@@ -46,10 +48,15 @@
   --wsj-ink: #1d1d1f;
   /* Text on any of the three yellows. Never #fff — see the note at the top. */
   --wsj-on-base: #1d1d1f;
-  /* The dark the yellow family does not have, borrowed from the guide's
-   * "utökad färgskala": #643C13 for text on white, #975A15 for a rule. */
-  --wsj-deep: #643c13;
-  --wsj-deep-soft: #975a15;
+  /* The dark the yellow family does not have. It used to be borrowed from the
+   * guide's "utökad färgskala"; it is now the blue-green that stands beside
+   * the yellow under "primära färger", so both halves of this page come from
+   * the same spread. #215161 carries text (8.7:1 either way round), #2E768A
+   * is light enough to read as a rule and still dark enough to carry text if
+   * it has to (5.2:1), #4096B2 is decoration only (3.4:1). */
+  --wsj-deep: #215161;
+  --wsj-deep-soft: #2e768a;
+  --wsj-deep-pale: #4096b2;
   --font-heading: 'Bravely Script', 'Lieberath Grotesque', system-ui, sans-serif;
   --font-body: 'Lieberath Grotesque', system-ui, sans-serif;
 
@@ -305,11 +312,16 @@
  * `HIGHLIGHT_NAME` in handbok-search.ts — the one string this file and that
  * one have to agree on.
  *
- * The pale blue is off the profile's palette on purpose: its colors are
- * already the plates and the headings here, so a hit painted in one of them
- * would read as more of the layout, and a mark has one job. It was an amber
- * while the theme was rust — under a yellow theme that is the one hue it
- * cannot be, which is why it sits on the other side of the wheel now. Written
+ * The mark has to be a color the layout is not, because a hit painted in a
+ * theme color reads as more of the layout and a mark has one job. It has now
+ * been chased twice: an amber while the theme was rust, then this pale blue
+ * when the theme turned yellow. The blue-green that came in on 2026-09-23 has
+ * moved the ground under it again — #9CE0F0 is no longer far from the family,
+ * only much lighter than any of it (11.5:1 against the ink it sits behind, where
+ * the palest theme blue-green is 5.0:1). That is enough for a wash behind body
+ * text, in a column where the blue-green appears only as thin rules and
+ * headings, but it is the thinnest the argument has been: if the page ever
+ * gains a pale blue-green surface, this has to move again. Written
  * out rather than taken from a custom property because a highlight
  * pseudo-element inherits through a chain of its own — whether it can see the
  * properties set on .handbok is up to the browser, and an unresolved var() is
@@ -507,7 +519,9 @@
  * line anyone can see. */
 .handbok th,
 .handbok td {
-  border: 1px solid var(--wsj-deep-soft);
+  /* Decoration, never read: the palest of the three, which is why it is the
+   * one place --wsj-deep-pale is allowed. */
+  border: 1px solid var(--wsj-deep-pale);
   padding: 0.4rem 0.6rem;
   text-align: left;
   vertical-align: top;
