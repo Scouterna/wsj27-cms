@@ -91,6 +91,17 @@ Three habits that keep it true:
   truncates at it, and `payload.config.ts` states the same number on the field.
   Keep the two together, and do not assume a returned document means a written
   row.
+- **An imported picture renders only at `depth: 1` or deeper.** The default
+  upload converter starts with `if (typeof uploadNode.value !== 'object')
+  return null`, so a page read at depth 0 drops its images silently — not a
+  broken image, no image at all, and nothing in any log. `loadHandbook` reads
+  at depth 1 for that reason alone.
+- **Media uploads are written by whichever machine runs the import**, to its own
+  staticDir. The deployment mounts a ReadWriteOnce PVC at `/app/media`, so a
+  local import against the production database creates rows whose files are on
+  the laptop. Copy them in afterwards (README has the loop), or the pictures
+  404 for everyone. This is the same constraint that keeps `replicas: 1` — it
+  goes away when media moves to blob storage.
 - **Check the statement order of generated migrations that drop tables.** The
   generator has emitted `DROP TABLE ... CASCADE` before the `DROP CONSTRAINT`
   statements for FKs referencing that table — the cascade takes the constraint

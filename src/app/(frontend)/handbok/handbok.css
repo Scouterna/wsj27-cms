@@ -407,6 +407,17 @@
   color: var(--wsj-dark);
 }
 
+/* Imported pictures. Word's are sized for an A4 page — the one in Bilaga 1 is
+ * 756px against a 736px column — so without a cap they set the page's width and
+ * everything else scrolls sideways to match. */
+.handbok .chapter img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+  border-radius: 8px;
+}
+
 .handbok table {
   border-collapse: collapse;
   width: 100%;

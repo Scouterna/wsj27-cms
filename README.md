@@ -234,9 +234,30 @@ The import writes content and nothing else. It **skips pages whose content,
 title, order and chapter are all unchanged**, because `updatedAt` is
 reader-facing on /handbok — an unconditional re-import would tell every reader
 that all thirty pages changed today. It **never deletes**, and prints the pages
-the CMS holds that the document no longer contains so a human can decide. It
-**drops images** and says how many: Word's `<img>` has no upload behind it, and
-left in it fails the whole page.
+the CMS holds that the document no longer contains so a human can decide.
+
+**Images become Media documents.** The converter renders each `<img>` as an
+upload node carrying only the original path, which Payload rejects, so the
+importer resolves them: the file is uploaded once, the node gets its document,
+and anything it cannot use — a missing file, or the EMF cover Word embeds and
+sharp cannot read — is dropped from the tree and named in the report rather
+than left to fail the page. Word rarely carries alt text, so the report also
+lists the images that were given a placeholder and need a human to describe
+them in the admin; the Media document is created once, so an edited alt
+survives re-imports.
+
+**Uploads land wherever the script runs.** Payload writes the file to the
+staticDir of the machine executing it, not to the pod's volume, so an import
+run against production has to be followed by copying the files into
+`/app/media` in the deployment — otherwise the rows point at pictures nobody
+can fetch:
+
+```bash
+POD=$(kubectl get pod -l app=wsj27-cms -n wsj27 -o name | head -1)
+for f in media/*; do
+  kubectl exec -i -n wsj27 "$POD" -- sh -c "cat > /app/$f" < "$f"
+done
+```
 
 What it deliberately does not do is decide what readers should be told. That is
 [scripts/apply-handbook-edits.ts](scripts/apply-handbook-edits.ts), driven by a

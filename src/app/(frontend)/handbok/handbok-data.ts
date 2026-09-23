@@ -43,7 +43,11 @@ export async function loadHandbook(): Promise<Handbook> {
       draft: false,
       sort: 'order',
       limit: 500,
-      depth: 0,
+      // Deep enough to populate the images. The default upload converter
+      // renders nothing at all when `value` is a bare id — `typeof value !==
+      // 'object'` returns null — so at depth 0 an imported picture is silently
+      // absent from the page rather than broken on it.
+      depth: 1,
       locale: 'sv',
     }),
   ])

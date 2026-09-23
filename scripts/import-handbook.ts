@@ -1,10 +1,28 @@
 /**
  * One-off import of the leader handbook into info-pages.
  *
- * Input is an HTML export of the Word document:
+ * Input is an HTML export of the Word document, with the images beside it:
  *
- *   docker run --rm -i pandoc/core:latest -f docx -t html --wrap=none - \
- *     < "Handboken V.0.docx" > handboken.html
+ *   docker run --rm -i pandoc/core:latest -f docx -t html --wrap=none \
+ *     < "Handboken V 1.1.docx" > docs/handboken.html
+ *
+ *   # A .docx is a zip, and pandoc names its <img> srcs after the entries in
+ *   # word/media — so unzipping them into media/ beside the HTML is all the
+ *   # linking the importer needs, and avoids --extract-media, which cannot
+ *   # write back through a container's stdin.
+ *   python3 -c "import zipfile,pathlib;z=zipfile.ZipFile('Handboken V 1.1.docx');\
+ *     d=pathlib.Path('docs/media');d.mkdir(parents=True,exist_ok=True);\
+ *     [ (d/pathlib.Path(n).name).write_bytes(z.read(n)) for n in z.namelist() \
+ *       if n.startswith('word/media/') ]"
+ *
+ * Do not end the pandoc command with a `-`: it reads stdin by default, and the
+ * explicit argument makes it read nothing and write an empty file, exit 0.
+ *
+ * **Uploads land wherever this runs.** Images become Media documents, and
+ * Payload writes the files to the staticDir of the machine executing the
+ * script — not to the pod's volume. Running this against production therefore
+ * needs the files copied into the deployment's /app/media afterwards, or the
+ * rows point at pictures nobody can fetch.
  *
  * Run with tsx (payload run swallows stdout), against the database the CMS
  * uses. NODE_ENV=production on purpose: it keeps the postgres adapter off
@@ -26,10 +44,11 @@
  * tips/Hälsa" exists in both Resa and Lägret) gets the chapter slug as
  * prefix, deterministically, so re-runs find their own pages again.
  */
-import { getPayload } from 'payload'
+import { getPayload, type Payload } from 'payload'
 import { convertHTMLToLexical, editorConfigFactory } from '@payloadcms/richtext-lexical'
 import { JSDOM } from 'jsdom'
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
+import { basename, dirname, extname, resolve as resolvePath } from 'path'
 
 import config from '../src/payload.config'
 import { editorFeatures } from '../src/lib/editorFeatures'
@@ -70,6 +89,99 @@ const stable = (value: unknown): string =>
       : val,
   )
 
+/**
+ * What Payload can store and a browser can show. Word also embeds EMF and WMF —
+ * the cover of this handbook is an 8 MB EMF — and sharp cannot read either, so
+ * an upload would fail at resize time rather than at validation.
+ */
+const WEB_IMAGE = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'])
+
+interface ImageReport {
+  attached: number
+  skipped: string[]
+  placeholderAlt: string[]
+}
+
+/**
+ * Turns the converter's dangling upload nodes into real ones.
+ *
+ * `convertHTMLToLexical` renders an `<img>` as `{ type: 'upload', pending: {
+ * src } }` — the original path and nothing else. Payload rejects that node, and
+ * because the search plugin syncs from the page's own afterChange, the rejection
+ * rolls back the whole page. So each one is resolved here: the file is uploaded
+ * to the Media collection once, and the node gets the `value` and `relationTo`
+ * it needs. An image that cannot be used is dropped from the tree and named in
+ * the report, never left to fail the page.
+ */
+async function attachUploads(
+  content: unknown,
+  htmlDir: string,
+  alts: Map<string, string>,
+  payload: Payload,
+  cache: Map<string, number | string>,
+  report: ImageReport,
+): Promise<void> {
+  const resolveMedia = async (src: string): Promise<number | string | undefined> => {
+    if (cache.has(src)) return cache.get(src)
+
+    const file = resolvePath(htmlDir, src)
+    if (!WEB_IMAGE.has(extname(file).toLowerCase()) || !existsSync(file)) return undefined
+
+    const filename = basename(file)
+    const found = await payload.find({
+      collection: 'media',
+      where: { filename: { equals: filename } },
+      limit: 1,
+    })
+
+    let id = found.docs[0]?.id
+    if (id == null) {
+      const alt = alts.get(src)
+      if (!alt) report.placeholderAlt.push(filename)
+      const doc = await payload.create({
+        collection: 'media',
+        locale: 'sv',
+        // Required, and Word rarely carries one. A placeholder gets the image
+        // in; the report says which need a human to describe them, and the
+        // Media document is created once so an edited alt survives re-imports.
+        data: { alt: alt || `Bild ur handboken (${filename})` },
+        filePath: file,
+      })
+      id = doc.id
+    }
+
+    cache.set(src, id)
+    return id
+  }
+
+  const walk = async (node: Record<string, unknown>): Promise<void> => {
+    const children = node.children as Record<string, unknown>[] | undefined
+    if (!Array.isArray(children)) return
+
+    const kept: Record<string, unknown>[] = []
+    for (const child of children) {
+      if (child.type === 'upload') {
+        const src = (child.pending as { src?: string } | undefined)?.src
+        const id = src ? await resolveMedia(src) : undefined
+        if (id == null) {
+          report.skipped.push(src ?? '(utan src)')
+          continue
+        }
+        delete child.pending
+        child.relationTo = 'media'
+        child.value = id
+        report.attached++
+      } else {
+        await walk(child)
+      }
+      kept.push(child)
+    }
+    node.children = kept
+  }
+
+  await walk((content as { root: Record<string, unknown> }).root)
+}
+
 interface Section {
   chapterIndex: number
   title: string
@@ -95,13 +207,14 @@ function chapterName(raw: string): string {
 function parseHandbook(html: string): {
   chapters: Chapter[]
   sections: Section[]
-  droppedImages: number
+  /** `<img src>` to its alt text, for the Media documents the images become. */
+  imageAlts: Map<string, string>
 } {
   const dom = new JSDOM(html)
   const chapters: Chapter[] = []
   const sections: Section[] = []
   let current: Section | null = null
-  let droppedImages = 0
+  const imageAlts = new Map<string, string>()
 
   for (const el of Array.from(dom.window.document.body.children)) {
     const tag = el.tagName.toLowerCase()
@@ -139,20 +252,21 @@ function parseHandbook(html: string): {
       current = { chapterIndex: chapters.length - 1, title: chapter.name, html: '', order: 0 }
       sections.push(current)
     }
-    // Word's images arrive as `<img src="media/image4.png">` — a reference to a
-    // file pandoc only writes with --extract-media, and nothing here uploads to
-    // the Media collection. Left in, the converter builds an `upload` node that
-    // points at no document, and Payload rejects the whole page: "upload node
-    // failed to validate: This field is not a valid upload ID". Dropping them
-    // is a real loss, so the count is reported rather than swallowed.
+    // Word's images arrive as `<img src="media/image4.png">`, a path relative to
+    // the HTML file that pandoc writes with --extract-media. The converter turns
+    // each one into an `upload` node carrying that src but no document, which
+    // Payload rejects outright — "upload node failed to validate: This field is
+    // not a valid upload ID" — so `attachUploads` resolves them after the
+    // conversion. The alt text has to be collected here, because the upload node
+    // does not carry it.
     for (const img of Array.from(el.querySelectorAll('img'))) {
-      droppedImages++
-      img.remove()
+      const src = img.getAttribute('src')
+      if (src) imageAlts.set(src, (img.getAttribute('alt') ?? '').trim())
     }
     current.html += el.outerHTML
   }
 
-  return { chapters, sections: sections.filter((s) => s.html.trim() !== ''), droppedImages }
+  return { chapters, sections: sections.filter((s) => s.html.trim() !== ''), imageAlts }
 }
 
 async function main() {
@@ -164,10 +278,7 @@ async function main() {
     process.exit(2)
   }
 
-  const { chapters, sections, droppedImages } = parseHandbook(readFileSync(htmlPath, 'utf8'))
-  if (droppedImages > 0) {
-    console.log(`note: ${droppedImages} image(s) dropped — see parseHandbook`)
-  }
+  const { chapters, sections, imageAlts } = parseHandbook(readFileSync(htmlPath, 'utf8'))
 
   // Deterministic page slugs, chapter-prefixed on collision.
   const seen = new Set<string>()
@@ -216,12 +327,17 @@ async function main() {
   let updated = 0
   let unchanged = 0
   let skipped = 0
+  const htmlDir = dirname(resolvePath(htmlPath))
+  const mediaCache = new Map<string, number | string>()
+  const images: ImageReport = { attached: 0, skipped: [], placeholderAlt: [] }
+
   for (const [i, s] of sections.entries()) {
     if (SKIP_SLUGS.has(pageSlugs[i])) {
       skipped++
       continue
     }
     const content = convertHTMLToLexical({ editorConfig, html: s.html, JSDOM })
+    await attachUploads(content, htmlDir, imageAlts, payload, mediaCache, images)
     const data = {
       title: s.title,
       slug: pageSlugs[i],
@@ -284,6 +400,16 @@ async function main() {
     .filter((slug) => !pageSlugs.includes(slug))
   if (orphans.length > 0) {
     console.log(`orphans (in the CMS, not in this document): ${orphans.join(', ')}`)
+  }
+
+  if (images.attached > 0) console.log(`images: ${images.attached} attached`)
+  if (images.skipped.length > 0) {
+    console.log(
+      `images skipped (missing file or a format sharp cannot read): ${images.skipped.join(', ')}`,
+    )
+  }
+  if (images.placeholderAlt.length > 0) {
+    console.log(`images needing alt text written in the admin: ${images.placeholderAlt.join(', ')}`)
   }
 
   console.log(
