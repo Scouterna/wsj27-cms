@@ -7,6 +7,37 @@ This project uses the Payload CMS skill at `.claude/skills/payload/`.
 Start with `.claude/skills/payload/SKILL.md` for a quick reference, then see
 `.claude/skills/payload/reference/` for detailed docs.
 
+## Documentation is part of the change
+
+**Change behaviour, change the documentation in the same commit.** CLAUDE.md,
+README.md and `k8s/README.md` say *why* the code looks the way it does, and a
+description that has stopped being true is worse than none at all: it reads as
+true, so it is believed, and it sends the next person the wrong way.
+
+This is not hypothetical, and the examples are all from this repository:
+
+- Two of the four commits after the initial import built `/handbok`, and the
+  README never mentioned the page existed.
+- The README listed `pnpm test:e2e` among the commands you run, while its one
+  unskipped test asserts the starter template's welcome page on a port the dev
+  server does not serve.
+- `k8s/README.md` told you to deploy `$IMG:<git-sha>`. CI pushes `sha-<short
+  sha>`, so following the instruction literally gives `ImagePullBackOff` —
+  during the one activity where you least want to debug the documentation.
+
+Three habits that keep it true:
+
+- **Never duplicate a value that can change.** Describe the shape and point at
+  the source. Every copy is a second truth, and the copy always loses. If a
+  copy is unavoidable, write in both places that the other one exists.
+- **Grep for what you just made false.** Renamed a label, a path, a flag, a
+  rule — `grep -rn "<the old thing>" --include=*.md .` before committing. It
+  takes seconds, and it is the only thing that catches a sentence three files
+  away.
+- **Leave the reason, not just the result.** The lines in this file are written
+  to say which mistake they exist to prevent. If you replace one, replace it
+  with something that explains as much.
+
 ## Constraints worth knowing before changing things
 
 - **Auth is SSO-only** (`src/collections/Users.ts`): the local users table is a
@@ -22,13 +53,13 @@ Start with `.claude/skills/payload/SKILL.md` for a quick reference, then see
 - **Migrations run at boot in production** (`prodMigrations`). Dev uses push
   mode, so a schema change can work locally while missing its migration —
   always `pnpm payload migrate:create` after changing collections.
-- **The chain is a single squashed `init` migration.** Nothing has deployed
-  yet, so j26's fourteen-migration history (including the screen tables WSJ27
-  will never have) was replaced by one migration of the final schema. Until
-  the first production deploy it is fine to keep it that way: delete the
-  migration, wipe the dev database, `pnpm payload migrate:create init`. From
-  the moment a production database exists, that stops — append migrations
-  only, and never edit old ones.
+- **The chain starts at a squashed `init` migration, and is append-only from
+  there.** j26's fourteen-migration history (including the screen tables WSJ27
+  will never have) was replaced by one migration of the final schema, which was
+  safe to re-squash while nothing had deployed. **That window is closed**: the
+  CMS serves production at campfire, `prodMigrations` runs at boot, so a
+  production database exists and holds `init` as applied. Never edit an
+  existing migration, and never re-squash — append.
 - **Check the statement order of generated migrations that drop tables.** The
   generator has emitted `DROP TABLE ... CASCADE` before the `DROP CONSTRAINT`
   statements for FKs referencing that table — the cascade takes the constraint
@@ -53,3 +84,8 @@ Start with `.claude/skills/payload/SKILL.md` for a quick reference, then see
   random package mid-install.
 - Deployment manifests live in `k8s/` and are applied by hand — CI only builds
   the image. See `k8s/README.md` for the one-time setup and the deploy ritual.
+- **CI runs no lint, no type check and no tests** — the only workflow asserts
+  the lockfile and builds the image. There is no gate between a broken commit
+  and a pushed image, so `pnpm lint`, `pnpm exec tsc --noEmit` and
+  `pnpm test:int` are yours to run before committing. Do not read a green
+  checkmark as more than "the image built".

@@ -5,9 +5,55 @@ CMS for WSJ27 (World Scout Jamboree 2027, Swedish contingent), built on
 [Scouterna/j26-cms](https://github.com/Scouterna/j26-cms) and adapted to the
 WSJ27 platform.
 
-It manages informational pages (with search) and media. Content is localized
-(sv/en). The digital-signage content types j26 had (screens, playlists,
-slides) are removed — WSJ27 will not have them.
+This file is orientation, setup and deploy. [CLAUDE.md](CLAUDE.md) records the
+constraints that are not obvious from the code, and [k8s/README.md](k8s/README.md)
+the one-time cluster setup.
+
+## What it holds
+
+| Name in the admin | Collection slug | What it is                                                         |
+| ----------------- | --------------- | ------------------------------------------------------------------ |
+| Handbok           | `info-page`     | One page of the leader handbook, or a standalone info page         |
+| Handbok kapitel   | `info-chapter`  | Groups pages and carries the navigation order                      |
+| Media             | `media`         | Uploads, resized to webp at 480/768/1080 px                        |
+| Users             | `users`         | A just-in-time mirror of wsj27-auth's claims, not an account store |
+
+**The admin labels and the collection slugs differ on purpose.** Editors see
+Handbok; the API paths, the database tables and `src/payload-types.ts` keep
+`info-page` and `info-chapter`. A slug is a schema identity — renaming one is a
+migration and invalidates every stored reference — so the display name is what
+follows the content's name, and the slug stays put.
+
+Pages are indexed by `@payloadcms/plugin-search` into a `search` collection.
+Every locale is flattened into one non-localized `searchText` field; see
+[src/search/beforeSync.ts](src/search/beforeSync.ts) for why a localized index
+would silently miss content.
+
+`sv` and `en` are both configured as content locales, but the handbook is
+written in Swedish only — the import script and `/handbok` both pass
+`locale: 'sv'` explicitly rather than relying on the default.
+
+The digital-signage content types j26 had (screens, playlists, slides) are
+removed — WSJ27 will not have them.
+
+## Routes
+
+Paths are relative to the base path, which is `/_services/cms` in production
+and empty by default locally.
+
+| Path                   | What it serves                                        |
+| ---------------------- | ----------------------------------------------------- |
+| `/admin`               | The Payload admin panel                               |
+| `/api`, `/api/graphql` | Payload's REST and GraphQL APIs                       |
+| `/api/app-config`      | The WSJ27 app shell's navigation entry                |
+| `/handbok`             | The whole handbook as one public page                 |
+| `/`, `/my-route`       | Unchanged leftovers from the Payload starter template |
+
+`/api/app-config` returns 401 to anyone without a CMS role, and that is what
+hides the tool from everyone who has no access — the app shell renders only
+what it gets. `/handbok` is `force-dynamic`: it reads the database on every
+request, because a stale static copy of an edited handbook is worse than a few
+queries on a page with this little traffic.
 
 ## How it fits the WSJ27 platform
 
@@ -39,29 +85,50 @@ pnpm dev                     # http://localhost:3005
 ```
 
 In development the postgres adapter runs in push mode, so schema changes apply
-to the dev database automatically. Note that logging in locally requires a
-valid wsj27-auth cookie, which is set on the campfire host — API endpoints and
-public pages work without one.
+to the dev database automatically. Logging in locally requires a valid
+wsj27-auth cookie, which is set on the campfire host — API endpoints, `/handbok`
+and the other public pages work without one.
 
-## Tests
+## Tests and checks
 
 ```bash
-pnpm test:int   # vitest, needs the dev database
-pnpm test:e2e   # playwright (admin tests are skipped pending SSO cookie injection)
+pnpm test:int   # vitest, tests/int — needs the dev database running
+pnpm lint       # eslint
+pnpm exec tsc --noEmit
 ```
+
+**None of these run in CI.** The only workflow builds the image (and asserts
+the lockfile, see CLAUDE.md), so whatever you do not run locally is not run at
+all.
+
+`pnpm test:e2e` is inherited from the starter template and does **not** pass as
+it stands, which is why it is listed separately from the commands above:
+
+- [tests/e2e/admin.e2e.spec.ts](tests/e2e/admin.e2e.spec.ts) is
+  `describe.skip` — the admin panel has no email/password form any more, so
+  these need a wsj27-auth session cookie injected before they can run.
+- [tests/e2e/frontend.e2e.spec.ts](tests/e2e/frontend.e2e.spec.ts) still
+  asserts the template's "Welcome to your new project." page, and Playwright's
+  `webServer.url` waits on port 3000 while `pnpm dev` serves 3005. Repairing it
+  means first deciding what the frontend should be asserted against; `/handbok`
+  is the obvious candidate.
 
 ## Migrations
 
 Production runs migrations at boot (`prodMigrations` in
-`src/payload.config.ts`). The chain is a single squashed `init` migration
-until the first production deploy — see CLAUDE.md. After changing collections:
+`src/payload.config.ts`), so a deploy needs no separate migration step. The
+chain starts at a squashed `init` and is **append-only** from there — a
+production database exists, so old migrations are never edited and the chain is
+never re-squashed. See CLAUDE.md. After changing collections:
 
 ```bash
 pnpm payload migrate:create <name>
 pnpm generate:types
 ```
 
-Both the migration files and `src/payload-types.ts` are committed.
+Both the migration files and `src/payload-types.ts` are committed. Admin-only
+changes — a `labels` block, a field `description` — touch no schema and need no
+migration.
 
 ## Importing the handbook
 
@@ -82,9 +149,10 @@ push mode, so the script can never alter the schema it writes into.
 ## Building and deploying
 
 Every push builds `ghcr.io/scouterna/wsj27-cms` via
-[.github/workflows/build-image.yml](.github/workflows/build-image.yml), tagged
-with the git SHA (and `latest` on main). The GHCR package must be public —
-the cluster pulls without credentials.
+[.github/workflows/build-image.yml](.github/workflows/build-image.yml). The
+per-commit tag is **`sha-<short sha>`**, not the bare sha — `docker/metadata-action`
+prefixes it — plus `latest` on the default branch. The GHCR package must be
+public; the cluster pulls without credentials.
 
-Deploying is applying the manifests in [k8s/](k8s/) with the new SHA tag — see
-[k8s/README.md](k8s/README.md). Always deploy a SHA tag, never `latest`.
+Deploying is applying the manifests in [k8s/](k8s/) with the new tag — see
+[k8s/README.md](k8s/README.md). Always deploy a `sha-` tag, never `latest`.

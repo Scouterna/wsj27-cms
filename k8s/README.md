@@ -11,13 +11,21 @@ Applying is a deliberate manual act:
 export KUBECONFIG=~/.kube/wsj27.yaml
 
 IMG=ghcr.io/scouterna/wsj27-cms
-(cd k8s && kustomize edit set image "$IMG=$IMG:<git-sha>") && kubectl apply -k k8s
+(cd k8s && kustomize edit set image "$IMG=$IMG:sha-<short sha>") && kubectl apply -k k8s
 # then revert the kustomization edit — never commit a real tag
+```
+
+The tag CI pushes is `sha-` plus the **short** sha (`docker/metadata-action`'s
+`type=sha` prefixes it), so the full 40-character sha is not a tag that exists
+and pasting one gives `ImagePullBackOff`. Read the tag off the build run, or:
+
+```bash
+git rev-parse --short HEAD   # matches the tag for a pushed commit
 ```
 
 The committed `newTag` is a deliberate placeholder so that applying unedited
 fails fast (`ImagePullBackOff`) instead of silently deploying `latest`. Always
-deploy a git-SHA tag; CI pushes one per commit.
+deploy a `sha-` tag; CI pushes one per commit.
 
 ## One-time setup, in order
 
