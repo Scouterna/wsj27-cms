@@ -14,7 +14,7 @@ import type { Metadata } from 'next'
  * fonts and the contingent logotype have: everything in `public/` is served
  * under the base path, and Next does not prefix a URL it was handed. They stay
  * absolute from the host root on purpose, so the handbook's other address —
- * `/_services/handbok`, outside the base path — asks for the same file.
+ * `/services/handbok`, outside the base path — asks for the same file.
  *
  * The artwork is the contingent logotype reduced to what survives 16 px: its
  * own brush plate, and "27" cut out of the wordmark's own "2027" so the digits

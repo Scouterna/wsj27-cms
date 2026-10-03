@@ -6,7 +6,7 @@
  */
 
 /** The handbook's public address, a sibling of the CMS base path. */
-export const HANDBOK_PUBLIC_PATH = '/_services/handbok'
+export const HANDBOK_PUBLIC_PATH = '/services/handbok'
 
 /** Request header the middleware sets so a page knows which address was used. */
 export const HANDBOK_PREFIX_HEADER = 'x-handbok-prefix'
