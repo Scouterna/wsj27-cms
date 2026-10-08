@@ -75,3 +75,9 @@ node_modules/
 # Källdokument för handboksimporten (scripts/import-handbook.ts). Stora
 # binärer som inte hör hemma i ett publikt repo — innehållet lever i CMS:et.
 docs/
+
+# Working scratch for the agent flow, in campfire's shape: requirements, design
+# and plan documents for one piece of work. The durable record is the code, the
+# documentation and the commit message — a plan that outlives its branch is a
+# second description of the system that nothing keeps true.
+.agents/specs/
