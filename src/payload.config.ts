@@ -64,6 +64,10 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    // The deployed CMS shares its environment's database with the other WSJ27
+    // apps and keeps to a schema of its own (`cms`). Unset means `public`, which
+    // is what local development and the docker-compose database use.
+    schemaName: process.env.DATABASE_SCHEMA || 'public',
     prodMigrations: migrations,
   }),
   sharp,
@@ -100,7 +104,7 @@ export default buildConfig({
     {
       // Consumed by the WSJ27 app shell to render the CMS tool in the
       // navigation (same contract as j26-app's J26_PUBLIC_APP_CONFIGS).
-      // Served at /_services/cms/api/app-config.
+      // Served at /services/cms/api/app-config.
       // req.user is populated by the wsj27-auth strategy only for users with a
       // wsj27-cms role, so returning 401 otherwise hides the tool from everyone
       // without CMS access.
@@ -118,7 +122,8 @@ export default buildConfig({
               id: 'page_cms',
               label: 'Hantera innehåll',
               icon: 'edit',
-              path: '/_services/cms/admin',
+              // From the base path baked into the image, so the two cannot drift.
+              path: `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/admin`,
             },
           ],
         })

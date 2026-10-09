@@ -1,5 +1,12 @@
 # wsj27-cms — deployment
 
+> **Legacy.** The CMS now deploys from
+> [Scouterna/wsj27-infra](https://github.com/Scouterna/wsj27-infra) to
+> webservices-v2, under `/services/cms`. This directory documents the old,
+> hand-applied deployment on the shared cluster, which runs `sha-e8f7cc5`
+> under `/_services/cms`. Images built after the path moved do not fit these
+> manifests — do not apply a newer tag here.
+
 Manifests for deploying this CMS, served at
 `https://campfire.wsj27.scouterna.net/_services/cms` in the `wsj27` namespace
 on Scouterna's shared AKS cluster.

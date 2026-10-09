@@ -184,7 +184,7 @@ export const LOGO_ALT = 'Swedish Contingent — 26th World Scout Jamboree Poland
 /**
  * The handbook's own links, built for the address the reader actually used.
  *
- * The handbook answers on two paths — /_services/handbok and the base path's
+ * The handbook answers on two paths — /services/handbok and the base path's
  * own /handbok — and `next/link` only knows about the second. Hard-coding it
  * would move a reader off the short address on their first click, so the
  * middleware reports which one came in and the links follow it. Plain `<a>`,
