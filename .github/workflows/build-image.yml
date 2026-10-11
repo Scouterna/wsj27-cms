@@ -71,7 +71,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NEXT_BASE_PATH=/_services/cms
+            NEXT_BASE_PATH=/services/cms
 
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3

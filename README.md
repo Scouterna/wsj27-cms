@@ -6,8 +6,10 @@ CMS for WSJ27 (World Scout Jamboree 2027, Swedish contingent), built on
 WSJ27 platform.
 
 This file is orientation, setup and deploy. [CLAUDE.md](CLAUDE.md) records the
-constraints that are not obvious from the code, and [k8s/README.md](k8s/README.md)
-the one-time cluster setup.
+constraints that are not obvious from the code. The deployment lives in
+[Scouterna/wsj27-infra](https://github.com/Scouterna/wsj27-infra) (`k8s/prod/`,
+`k8s/dev/`); [k8s/](k8s/) here is the legacy hand-applied deployment on the old
+cluster and fits only images built before the move to `/services/cms`.
 
 ## What it holds
 
@@ -68,7 +70,7 @@ removed — WSJ27 will not have them.
 
 ## Routes
 
-Paths are relative to the base path, which is `/_services/cms` in production
+Paths are relative to the base path, which is `/services/cms` in production
 and empty by default locally.
 
 | Path                   | What it serves                                        |
@@ -86,19 +88,19 @@ what it gets. `/handbok` is `force-dynamic`: it reads the database on every
 request, because a stale static copy of an edited handbook is worse than a few
 queries on a page with this little traffic.
 
-**The handbook's public address is
-`https://campfire.wsj27.scouterna.net/_services/handbok`** — a sibling of the
+**The handbook's public address is `/services/handbok` on the campfire
+host** — a sibling of the
 base path, not a child of it, and so the one address in this repo that the
 table above cannot express. [src/middleware.ts](src/middleware.ts) rewrites
 that prefix — the whole subtree, so the printable version comes with it — onto
-`/_services/cms/handbok`; the file explains why neither traefik nor
+`/services/cms/handbok`; the file explains why neither traefik nor
 `next.config` can do it instead. Three things follow:
 
-- **`/_services/cms` has to stay routed** for the short URL to render at all.
+- **`/services/cms` has to stay routed** for the short URL to render at all.
   The page is served from the short path but its JS, CSS and fonts are
   base-path-prefixed, so they come from the long one.
-- **The ingress needs both paths**, and [k8s/ingress.yaml](k8s/ingress.yaml)
-  has them. Routing `/_services/handbok` without the middleware in the image is
+- **The ingress needs both paths**, and the `wsj27-cms` Ingress in wsj27-infra
+  has them. Routing `/services/handbok` without the middleware in the image is
   a 404, and shipping the middleware without the ingress path never gets a
   request.
 - **The handbook's own links follow the address the reader used.** Both
@@ -264,9 +266,9 @@ would have arrived framed in it.
 
 ## How it fits the WSJ27 platform
 
-- Served at **`https://campfire.wsj27.scouterna.net/_services/cms`** — the same
+- Served at **`/services/cms` on each environment's campfire host** — the same
   host as the other WSJ27 apps, because the SSO session lives in host-scoped
-  cookies. The `/_services/cms` base path is baked into the Docker image at
+  cookies. The `/services/cms` base path is baked into the Docker image at
   build time (`NEXT_BASE_PATH` build-arg).
 - **Login is SSO-only**, against the shared
   [wsj27-auth-api](https://github.com/Scouterna/wsj27-auth-api): the CMS
@@ -282,9 +284,11 @@ would have arrived framed in it.
   (any `wsj27:cmt…` project role) counts as editor without a dedicated grant.
   Everyone else is treated as logged out. Admin (user management) always
   requires an explicit `wsj27-cms:admin`.
-- The Kubernetes manifests live in [k8s/](k8s/) in this repo, same pattern as
-  the other WSJ27 services. The database is a dedicated role + database on the
-  in-cluster Postgres.
+- The Kubernetes manifests live in
+  [Scouterna/wsj27-infra](https://github.com/Scouterna/wsj27-infra), next to
+  the other WSJ27 services, and ArgoCD applies them. The database is the
+  environment's shared one; the CMS keeps to its own schema, `cms`, set by
+  `DATABASE_SCHEMA` (see CLAUDE.md).
 
 ## Local development
 
@@ -301,8 +305,8 @@ wsj27-auth cookie, which is set on the campfire host — API endpoints, `/handbo
 and the other public pages work without one.
 
 `NEXT_BASE_PATH` is empty by default locally, which puts everything at the root
-and leaves the middleware inert. Set it to `/_services/cms` in `.env` to get
-production's paths — that is the only way to exercise `/_services/handbok`
+and leaves the middleware inert. Set it to `/services/cms` in `.env` to get
+production's paths — that is the only way to exercise `/services/handbok`
 before deploying.
 
 ## Tests and checks
@@ -402,9 +406,10 @@ run against production has to be followed by copying the files into
 can fetch:
 
 ```bash
-POD=$(kubectl get pod -l app=wsj27-cms -n wsj27 -o name | head -1)
+NS=proj-wsj27-prod   # or proj-wsj27-dev, on webservices-v2
+POD=$(kubectl get pod -l app=wsj27-cms -n "$NS" -o name | head -1)
 for f in media/*; do
-  kubectl exec -i -n wsj27 "$POD" -- sh -c "cat > /app/$f" < "$f"
+  kubectl exec -i -n "$NS" "$POD" -- sh -c "cat > /app/$f" < "$f"
 done
 ```
 
@@ -438,5 +443,6 @@ per-commit tag is **`sha-<short sha>`**, not the bare sha — `docker/metadata-a
 prefixes it — plus `latest` on the default branch. The GHCR package must be
 public; the cluster pulls without credentials.
 
-Deploying is applying the manifests in [k8s/](k8s/) with the new tag — see
-[k8s/README.md](k8s/README.md). Always deploy a `sha-` tag, never `latest`.
+Deploying is setting the new tag in `k8s/<env>/wsj27-cms.yaml` in
+[Scouterna/wsj27-infra](https://github.com/Scouterna/wsj27-infra) and committing;
+ArgoCD applies it. Always deploy a `sha-` tag, never `latest`.

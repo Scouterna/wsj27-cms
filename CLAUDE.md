@@ -48,18 +48,18 @@ Three habits that keep it true:
   (`wsj27-auth_access-token`) is host-scoped, which is why production serves
   the CMS under a base path on the campfire host instead of its own subdomain.
 - **`NEXT_BASE_PATH` is baked at image build time** (Next.js basePath). The
-  production image is built with `/_services/cms`; changing the serving path
+  production image is built with `/services/cms`; changing the serving path
   means rebuilding the image, not just editing the ingress.
 - **Never give `src/middleware.ts` a `config.matcher`.** It exists to serve the
-  handbook at `/_services/handbok`, which is *outside* basePath, and a matcher
+  handbook at `/services/handbok`, which is *outside* basePath, and a matcher
   is basePath-relative — Next prefixes it, so any matcher written there names a
-  path under `/_services/cms` and the middleware stops running for the one path
+  path under `/services/cms` and the middleware stops running for the one path
   it exists for. The failure is a plain 404 with nothing in the logs; it was
   measured, not reasoned about. The `if` in the file is the gate instead, and
   the cost is a string compare per request. The same paragraph explains why the
   rewrite cannot live in traefik (no rights to create a `Middleware` CRD) or in
   `next.config` (Next refuses an internal destination under `basePath: false`).
-  It rewrites the whole `/_services/handbok` prefix rather than one path, so
+  It rewrites the whole `/services/handbok` prefix rather than one path, so
   the printable version comes with it, and reports the prefix it matched in a
   request header so the handbook's own links stay on the address the reader
   used. That constant lives in `src/handbok-prefix.ts` as its own module: the
@@ -88,6 +88,20 @@ Three habits that keep it true:
   `20260922_232632_add_change_note` is the first appended one and is what a new
   migration should look like: additive `ALTER TABLE ... ADD COLUMN`, with a
   `down` that drops exactly those columns.
+- **Deployed, the CMS lives in schema `cms`, not `public`.** It shares each
+  environment's database with the other WSJ27 apps, and `DATABASE_SCHEMA` sets
+  the adapter's `schemaName` (unset = `public`, as locally). Two traps follow:
+  - The generator writes the schema into the SQL (`"public"."enum_…"`), and
+    the existing migrations — `init` most of all — say `public`. They are
+    recorded as applied in every deployed database (seeded from a dump with the
+    schema renamed), so they never run there. A **fresh** database would run
+    them and land in `public`; seed it from a dump instead.
+  - **Create new migrations with `DATABASE_SCHEMA=cms`**, so they name `cms`.
+    One generated without it targets `public` and fails, or worse, succeeds
+    against the wrong schema.
+  - `schemaName` is experimental in Payload: it breaks if a table or enum of the
+    same name exists in another schema of the same database. Today the dev
+    database's `public` holds only wsj27-project-api's `cases*` tables.
 - **A page whose text passes 40 000 characters used to vanish on save.**
   `searchText` flattens every locale of a page into one field, and Payload
   validates text fields against `defaultMaxTextLength` (40 000). The search
@@ -106,11 +120,10 @@ Three habits that keep it true:
   broken image, no image at all, and nothing in any log. `loadHandbook` reads
   at depth 1 for that reason alone.
 - **Media uploads are written by whichever machine runs the import**, to its own
-  staticDir. The deployment mounts a ReadWriteOnce PVC at `/app/media`, so a
-  local import against the production database creates rows whose files are on
-  the laptop. Copy them in afterwards (README has the loop), or the pictures
-  404 for everyone. This is the same constraint that keeps `replicas: 1` — it
-  goes away when media moves to blob storage.
+  staticDir. The deployment mounts a PVC at `/app/media`, so a local import
+  against the production database creates rows whose files are on the laptop.
+  Copy them in afterwards (README has the loop), or the pictures 404 for
+  everyone. That PVC is `files-shared`, which is **not backed up**.
 - **Check the statement order of generated migrations that drop tables.** The
   generator has emitted `DROP TABLE ... CASCADE` before the `DROP CONSTRAINT`
   statements for FKs referencing that table — the cascade takes the constraint
@@ -133,8 +146,10 @@ Three habits that keep it true:
   CI asserts the property (no `tarball:` URL off registry.npmjs.org) before
   building, so a poisoned lockfile fails fast instead of as `ENOTFOUND` on a
   random package mid-install.
-- Deployment manifests live in `k8s/` and are applied by hand — CI only builds
-  the image. See `k8s/README.md` for the one-time setup and the deploy ritual.
+- Deployment manifests live in Scouterna/wsj27-infra (`k8s/prod/`, `k8s/dev/`)
+  and ArgoCD applies them — CI here only builds the image. `k8s/` in this repo
+  is the legacy hand-applied deployment on the old cluster; it still says
+  `/_services/cms` and fits only images built before the path moved.
 - **CI runs no lint, no type check and no tests** — the only workflow asserts
   the lockfile and builds the image. There is no gate between a broken commit
   and a pushed image, so `pnpm lint`, `pnpm exec tsc --noEmit` and

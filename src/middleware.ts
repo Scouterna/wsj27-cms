@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { HANDBOK_PREFIX_HEADER, HANDBOK_PUBLIC_PATH } from './handbok-prefix'
 
-// Serve the handbook at /_services/handbok, a sibling of the CMS's own base
+// Serve the handbook at /services/handbok, a sibling of the CMS's own base
 // path rather than a child of it.
 //
 // There is nowhere else this can happen. Traefik would need a Middleware CRD
@@ -14,7 +14,7 @@ import { HANDBOK_PREFIX_HEADER, HANDBOK_PUBLIC_PATH } from './handbok-prefix'
 // Two consequences of basePath that this file is shaped by:
 //
 //   - **No `config.matcher`.** A matcher is basePath-relative — Next prefixes
-//     it — so any matcher written here is a path under /_services/cms, and the
+//     it — so any matcher written here is a path under /services/cms, and the
 //     one path this exists for is not. Declaring one makes the middleware stop
 //     running for it entirely, which is a silent 404, so the gate is the `if`
 //     below and the cost is a string compare per request.
@@ -22,7 +22,7 @@ import { HANDBOK_PREFIX_HEADER, HANDBOK_PUBLIC_PATH } from './handbok-prefix'
 //     basePath Next leaves `nextUrl.pathname` unstripped.
 //
 // The page loads its JS, CSS and fonts from under the base path, so
-// /_services/cms must stay routed for the short URL to render.
+// /services/cms must stay routed for the short URL to render.
 const BASE_PATH = process.env.NEXT_BASE_PATH || ''
 const PUBLIC_PATH = HANDBOK_PUBLIC_PATH
 
